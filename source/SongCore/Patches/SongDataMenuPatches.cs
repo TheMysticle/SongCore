@@ -7,10 +7,11 @@ using SongCore.Data;
 using SongCore.UI;
 using SongCore.Utilities;
 using UnityEngine;
+using Zenject;
 
 namespace SongCore.Patches
 {
-    internal class SongDataMenuPatches : IAffinity, IDisposable
+    internal class SongDataMenuPatches : IAffinity, IInitializable, IDisposable
     {
         private readonly StandardLevelDetailViewController _standardLevelDetailViewController;
         private readonly CustomLevelLoader _customLevelLoader;
@@ -20,7 +21,6 @@ namespace SongCore.Patches
         private readonly Dictionary<string, Dictionary<BeatmapDifficulty, string>> _characteristicDifficultyLabels = new();
         private readonly Dictionary<string, Sprite> _characteristicDetailsSprites = new();
 
-        private BeatmapLevel? _beatmapLevel;
         private SongData? _songData;
         private bool _actionButtonInteractable;
         private bool _practiceButtonInteractable;
@@ -34,37 +34,39 @@ namespace SongCore.Patches
             _config = config;
         }
 
+        public void Initialize()
+        {
+            _standardLevelDetailViewController.didChangeContentEvent += HandleStandardLevelDetailViewControllerDidChangeContent;
+        }
+
         public void Dispose()
         {
+            _standardLevelDetailViewController.didChangeContentEvent -= HandleStandardLevelDetailViewControllerDidChangeContent;
+
             foreach (var sprite in _characteristicDetailsSprites.Values)
             {
                 SpriteAsyncLoader.DestroySprite(sprite);
             }
         }
 
-        [AffinityPatch(typeof(StandardLevelDetailViewController), nameof(StandardLevelDetailViewController.ShowOwnedContent))]
-        [AffinityPrefix]
-        private void GetSongData()
+        private void HandleStandardLevelDetailViewControllerDidChangeContent(StandardLevelDetailViewController standardLevelDetailViewController, StandardLevelDetailViewController.ContentType contentType)
         {
-            _beatmapLevel = _standardLevelDetailViewController.beatmapLevel;
-
-            if (_beatmapLevel.hasPrecalculatedData)
+            if (contentType is StandardLevelDetailViewController.ContentType.Loading or StandardLevelDetailViewController.ContentType.Inactive)
             {
-                return;
+                _songData = Collections.GetCustomLevelSongData(_standardLevelDetailViewController.beatmapLevel.levelID)!;
+                _characteristicDifficultyLabels.Clear();
             }
-
-            _songData = Collections.GetCustomLevelSongData(_beatmapLevel.levelID)!;
         }
 
         [AffinityPatch(typeof(BeatmapCharacteristicSegmentedControlController), nameof(BeatmapCharacteristicSegmentedControlController.SetData))]
         private void GetDifficultyLabels()
         {
-            if (_beatmapLevel!.hasPrecalculatedData)
+            if (_songData == null)
             {
                 return;
             }
 
-            foreach (var difficultyData in _songData!._difficulties)
+            foreach (var difficultyData in _songData._difficulties)
             {
                 _characteristicDifficultyLabels.TryAdd(difficultyData._beatmapCharacteristicName, new Dictionary<BeatmapDifficulty, string>());
                 if (!string.IsNullOrWhiteSpace(difficultyData._difficultyLabel))
@@ -78,7 +80,7 @@ namespace SongCore.Patches
         [AffinityPatch(typeof(BeatmapDifficultyMethods), nameof(BeatmapDifficultyMethods.Name))]
         private void SetDifficultyLabel(ref string __result, BeatmapDifficulty difficulty)
         {
-            if (_beatmapLevel == null || _beatmapLevel.hasPrecalculatedData || !_config.DisplayDiffLabels)
+            if (_songData == null || !_config.DisplayDiffLabels)
             {
                 return;
             }
@@ -90,16 +92,10 @@ namespace SongCore.Patches
             }
         }
 
-        [AffinityPatch(typeof(StandardLevelDetailView), nameof(StandardLevelDetailView.RefreshContent))]
-        private void ClearDifficultyLabels()
-        {
-            _characteristicDifficultyLabels.Clear();
-        }
-
         [AffinityPatch(typeof(BeatmapCharacteristicSegmentedControlController), nameof(BeatmapCharacteristicSegmentedControlController.SetData))]
         private void SelectDefaultCharacteristic()
         {
-            if (_beatmapLevel!.hasPrecalculatedData || _songData!._defaultCharacteristic == null || _beatmapCharacteristicSegmentedControlController.selectedBeatmapCharacteristic.serializedName == _songData._defaultCharacteristic)
+            if (_songData == null || _songData._defaultCharacteristic == null || _songData._defaultCharacteristic == _beatmapCharacteristicSegmentedControlController.selectedBeatmapCharacteristic.serializedName)
             {
                 return;
             }
@@ -115,7 +111,7 @@ namespace SongCore.Patches
         [AffinityPatch(typeof(BeatmapCharacteristicSegmentedControlController), nameof(BeatmapCharacteristicSegmentedControlController.SetData))]
         private void SetCosmeticCharacteristic(BeatmapCharacteristicSO selectedBeatmapCharacteristic)
         {
-            if (_beatmapLevel!.hasPrecalculatedData || !_config.DisplayCustomCharacteristics || _songData!._characteristicDetails == null)
+            if (_songData == null || _songData._characteristicDetails == null || !_config.DisplayCustomCharacteristics)
             {
                 return;
             }
@@ -142,7 +138,7 @@ namespace SongCore.Patches
 
                 if (!string.IsNullOrWhiteSpace(characteristicDetails._characteristicIconFilePath))
                 {
-                    var spritePath = Path.Combine(_customLevelLoader._loadedBeatmapSaveData[_beatmapLevel.levelID].customLevelFolderInfo.folderPath, characteristicDetails._characteristicIconFilePath);
+                    var spritePath = Path.Combine(_customLevelLoader._loadedBeatmapSaveData[_standardLevelDetailViewController.beatmapLevel.levelID].customLevelFolderInfo.folderPath, characteristicDetails._characteristicIconFilePath);
 
                     if (!_characteristicDetailsSprites.TryGetValue(spritePath, out var icon))
                     {
@@ -174,6 +170,7 @@ namespace SongCore.Patches
         [AffinityPatch(typeof(StandardLevelDetailView), nameof(StandardLevelDetailView.RefreshContent))]
         private void HandleBeatmapRequirements(StandardLevelDetailView __instance)
         {
+            var beatmapLevel = _standardLevelDetailViewController.beatmapLevel;
             var beatmapKey = __instance.beatmapKey;
             var actionButton = __instance.actionButton;
             var practiceButton = __instance.practiceButton;
@@ -184,7 +181,7 @@ namespace SongCore.Patches
             _requirementsUI.ButtonGlowColor = false;
             _requirementsUI.ButtonInteractable = false;
 
-            if (_beatmapLevel!.hasPrecalculatedData)
+            if (_songData == null)
             {
                 return;
             }
@@ -222,7 +219,7 @@ namespace SongCore.Patches
                 }
             }
 
-            if (_beatmapLevel.levelID.EndsWith(" WIP", StringComparison.Ordinal))
+            if (beatmapLevel.levelID.EndsWith(" WIP", StringComparison.Ordinal))
             {
                 _requirementsUI.ButtonGlowColor = true;
                 _requirementsUI.ButtonInteractable = true;
@@ -257,7 +254,7 @@ namespace SongCore.Patches
                 _requirementsUI.ButtonInteractable = true;
             }
 
-            _requirementsUI.beatmapLevel = _beatmapLevel;
+            _requirementsUI.beatmapLevel = beatmapLevel;
             _requirementsUI.beatmapKey = beatmapKey;
             _requirementsUI.songData = _songData;
             _requirementsUI.diffData = difficultyData;
