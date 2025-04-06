@@ -216,21 +216,6 @@ namespace SongCore
                 message += " | v" + BeatmapSaveDataHelpers.GetVersion(_customLevelLoader._loadedBeatmapSaveData[beatmapLevel.levelID].customLevelFolderInfo.levelInfoJsonString);
             }
             Plugin.Log.Debug(message);
-
-            if (!beatmapLevel.hasPrecalculatedData)
-            {
-                var songData = Collections.GetCustomLevelSongData(beatmapLevel.levelID)!;
-
-                if (_config.CustomSongPlatforms && !string.IsNullOrWhiteSpace(songData._customEnvironmentName))
-                {
-                    Plugin.Log.Debug("Custom song with platform selected");
-                    Plugin.CustomSongPlatformSelectionDidChange?.Invoke(true, songData._customEnvironmentName, songData._customEnvironmentHash, beatmapLevel);
-                }
-                else
-                {
-                    Plugin.CustomSongPlatformSelectionDidChange?.Invoke(false, songData._customEnvironmentName, songData._customEnvironmentHash, beatmapLevel);
-                }
-            }
         }
 
         /// <summary>

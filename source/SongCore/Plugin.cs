@@ -22,8 +22,6 @@ namespace SongCore
 
         internal static Logger Log { get; private set; } = null!;
 
-        public static Action<bool, string, string, BeatmapLevel>? CustomSongPlatformSelectionDidChange;
-
         [Init]
         public Plugin(Logger logger, PluginMetadata metadata, Zenjector zenjector)
         {
