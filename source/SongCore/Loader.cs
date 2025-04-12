@@ -441,11 +441,6 @@ namespace SongCore
                     // Clear removed songs from loaded data, in case they were removed manually.
                     if (_customLevelLoader._loadedBeatmapSaveData.Count > 0)
                     {
-                        if (!fullRefresh)
-                        {
-                            StoreLoadedBeatmapSaveData();
-                        }
-
                         var folders = songFolders
                             .Concat(SeparateSongFolders
                                 .Select(f => Path.GetFullPath(f.SongFolderEntry.Path))
@@ -455,12 +450,19 @@ namespace SongCore
                                     .Where(d => d.Exists && !d.Attributes.HasFlag(FileAttributes.Hidden))
                                     .Select(d => d.FullName)))
                             .ToHashSet();
-                        foreach (var loadedSaveData in _customLevelLoader._loadedBeatmapSaveData.Values)
+
+                        // Need to make a copy of the loaded save data since we might modify the iterated collection.
+                        foreach (var loadedSaveData in _customLevelLoader._loadedBeatmapSaveData.Values.ToArray())
                         {
                             if (!folders.Contains(loadedSaveData.customLevelFolderInfo.folderPath))
                             {
                                 DeleteSingleSong(loadedSaveData.customLevelFolderInfo.folderPath, false);
                             }
+                        }
+
+                        if (!fullRefresh)
+                        {
+                            StoreLoadedBeatmapSaveData();
                         }
                     }
 
