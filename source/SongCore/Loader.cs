@@ -797,6 +797,11 @@ namespace SongCore
 
         private void DeleteSingleSong(string folderPath, bool deleteFolder)
         {
+            if (folderPath.EndsWith("(Built in)", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("Cannot delete built-in levels.");
+            }
+
             //Remove the level from SongCore Collections
             try
             {
