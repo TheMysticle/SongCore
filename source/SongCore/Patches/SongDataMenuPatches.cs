@@ -53,7 +53,7 @@ namespace SongCore.Patches
         {
             if (contentType is StandardLevelDetailViewController.ContentType.Loading or StandardLevelDetailViewController.ContentType.Inactive)
             {
-                _songData = Collections.GetCustomLevelSongData(_standardLevelDetailViewController.beatmapLevel.levelID)!;
+                _songData = _standardLevelDetailViewController.beatmapLevel != null ? Collections.GetCustomLevelSongData(_standardLevelDetailViewController.beatmapLevel.levelID) : null;
                 _characteristicDifficultyLabels.Clear();
             }
         }
