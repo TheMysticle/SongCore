@@ -326,7 +326,7 @@ namespace SongCore
                 ? new ConcurrentDictionary<string, bool>()
                 : new ConcurrentDictionary<string, bool>(Hashing.cachedSongHashData.Keys.ToDictionary(Hashing.GetAbsolutePath, _ => false));
 
-            Action job = () =>
+            Action job = async () =>
             {
                 #region AddOfficialBeatmaps
 
@@ -385,7 +385,7 @@ namespace SongCore
                             CacheZIPs(cachePath, _customWIPPath);
 
                             var cacheFolders = Directory.GetDirectories(cachePath);
-                            LoadCachedZIPs(cacheFolders, fullRefresh, CachedWIPLevels);
+                            await LoadCachedZIPs(cacheFolders, fullRefresh, CachedWIPLevels);
                         }
                         catch (Exception ex)
                         {
@@ -456,6 +456,7 @@ namespace SongCore
                         {
                             if (!folders.Contains(loadedSaveData.customLevelFolderInfo.folderPath))
                             {
+                                Plugin.Log.Warn($"Removing {loadedSaveData.customLevelFolderInfo.folderPath} from loaded levels");
                                 DeleteSingleSong(loadedSaveData.customLevelFolderInfo.folderPath, false);
                             }
                         }
@@ -963,8 +964,9 @@ namespace SongCore
         /// <param name="fullRefresh"></param>
         /// <param name="beatmapDictionary"></param>
         /// <param name="folderEntry"></param>
-        private void LoadCachedZIPs(IEnumerable<string> cacheFolders, bool fullRefresh, ConcurrentDictionary<string, BeatmapLevel> beatmapDictionary, SongFolderEntry? folderEntry = null)
+        private Task LoadCachedZIPs(IEnumerable<string> cacheFolders, bool fullRefresh, ConcurrentDictionary<string, BeatmapLevel> beatmapDictionary, SongFolderEntry? folderEntry = null)
         {
+            var tasks = new List<Task>();
             foreach (var cachedFolder in cacheFolders)
             {
                 string[] results;
@@ -997,7 +999,7 @@ namespace SongCore
                             }
                         }
 
-                        Task.Run(() =>
+                        tasks.Add(Task.Run(() =>
                         {
                             try
                             {
@@ -1016,7 +1018,7 @@ namespace SongCore
                                 Plugin.Log.Error($"Failed to load song from {cachedFolder}:");
                                 Plugin.Log.Error(ex);
                             }
-                        }, _loadingTaskCancellationTokenSource.Token);
+                        }, _loadingTaskCancellationTokenSource.Token));
                     }
                     catch (Exception ex)
                     {
@@ -1025,6 +1027,8 @@ namespace SongCore
                     }
                 }
             }
+
+            return Task.WhenAll(tasks);
         }
 
         #endregion
