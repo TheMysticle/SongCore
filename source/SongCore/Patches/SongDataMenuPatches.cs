@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using HMUI;
 using SiraUtil.Affinity;
 using SongCore.Data;
 using SongCore.UI;
@@ -13,9 +14,9 @@ namespace SongCore.Patches
 {
     internal class SongDataMenuPatches : IAffinity, IInitializable, IDisposable
     {
+        private readonly LevelCollectionViewController _levelCollectionViewController;
         private readonly StandardLevelDetailViewController _standardLevelDetailViewController;
         private readonly CustomLevelLoader _customLevelLoader;
-        private readonly BeatmapCharacteristicSegmentedControlController _beatmapCharacteristicSegmentedControlController;
         private readonly RequirementsUI _requirementsUI;
         private readonly PluginConfig _config;
         private readonly Dictionary<string, Dictionary<BeatmapDifficulty, string>> _characteristicDifficultyLabels = new();
@@ -25,23 +26,23 @@ namespace SongCore.Patches
         private bool _actionButtonInteractable;
         private bool _practiceButtonInteractable;
 
-        private SongDataMenuPatches(StandardLevelDetailViewController standardLevelDetailViewController, CustomLevelLoader customLevelLoader, RequirementsUI requirementsUI, PluginConfig config)
+        private SongDataMenuPatches(LevelCollectionViewController levelCollectionViewController, StandardLevelDetailViewController standardLevelDetailViewController, CustomLevelLoader customLevelLoader, RequirementsUI requirementsUI, PluginConfig config)
         {
+            _levelCollectionViewController = levelCollectionViewController;
             _standardLevelDetailViewController = standardLevelDetailViewController;
             _customLevelLoader = customLevelLoader;
-            _beatmapCharacteristicSegmentedControlController = standardLevelDetailViewController._standardLevelDetailView._beatmapCharacteristicSegmentedControlController;
             _requirementsUI = requirementsUI;
             _config = config;
         }
 
         public void Initialize()
         {
-            _standardLevelDetailViewController.didChangeContentEvent += HandleStandardLevelDetailViewControllerDidChangeContent;
+            _levelCollectionViewController.didSelectLevelEvent += HandleLevelCollectionViewControllerDidSelectLevel;
         }
 
         public void Dispose()
         {
-            _standardLevelDetailViewController.didChangeContentEvent -= HandleStandardLevelDetailViewControllerDidChangeContent;
+            _levelCollectionViewController.didSelectLevelEvent -= HandleLevelCollectionViewControllerDidSelectLevel;
 
             foreach (var sprite in _characteristicDetailsSprites.Values)
             {
@@ -49,23 +50,16 @@ namespace SongCore.Patches
             }
         }
 
-        private void HandleStandardLevelDetailViewControllerDidChangeContent(StandardLevelDetailViewController standardLevelDetailViewController, StandardLevelDetailViewController.ContentType contentType)
+        private void HandleLevelCollectionViewControllerDidSelectLevel(LevelCollectionViewController levelCollectionViewController, BeatmapLevel beatmapLevel)
         {
-            if (contentType is StandardLevelDetailViewController.ContentType.Loading or StandardLevelDetailViewController.ContentType.Inactive)
-            {
-                _songData = _standardLevelDetailViewController.beatmapLevel != null ? Collections.GetCustomLevelSongData(_standardLevelDetailViewController.beatmapLevel.levelID) : null;
-                _characteristicDifficultyLabels.Clear();
-            }
-        }
+            _songData = Collections.GetCustomLevelSongData(beatmapLevel.levelID);
 
-        [AffinityPatch(typeof(BeatmapCharacteristicSegmentedControlController), nameof(BeatmapCharacteristicSegmentedControlController.SetData))]
-        private void GetDifficultyLabels()
-        {
             if (_songData == null)
             {
                 return;
             }
 
+            _characteristicDifficultyLabels.Clear();
             foreach (var difficultyData in _songData._difficulties)
             {
                 _characteristicDifficultyLabels.TryAdd(difficultyData._beatmapCharacteristicName, new Dictionary<BeatmapDifficulty, string>());
@@ -76,99 +70,129 @@ namespace SongCore.Patches
             }
         }
 
-        // TODO: Find a way to add a limitation to the size of the text.
-        [AffinityPatch(typeof(BeatmapDifficultyMethods), nameof(BeatmapDifficultyMethods.Name))]
-        private void SetDifficultyLabel(ref string __result, BeatmapDifficulty difficulty)
+        [AffinityPatch(typeof(BeatmapDifficultySegmentedControlController), nameof(BeatmapDifficultySegmentedControlController.SetData))]
+        private void SetData(BeatmapDifficultySegmentedControlController __instance)
         {
             if (_songData == null || !_config.DisplayDiffLabels)
             {
                 return;
             }
 
-            if (_characteristicDifficultyLabels.TryGetValue(_beatmapCharacteristicSegmentedControlController.selectedBeatmapCharacteristic.serializedName, out var difficultyLabels)
-                && difficultyLabels.TryGetValue(difficulty, out var difficultyLabel))
+            var selectedBeatmapCharacteristic = _standardLevelDetailViewController._standardLevelDetailView._beatmapCharacteristicSegmentedControlController.selectedBeatmapCharacteristic.serializedName;
+            __instance._difficultySegmentedControl._texts = __instance._difficulties
+                .Select((diff, i) => _characteristicDifficultyLabels.TryGetValue(selectedBeatmapCharacteristic, out var difficultyLabels) && difficultyLabels.TryGetValue(diff, out var difficultyLabel)
+                    ? GetDifficultyLabel(difficultyLabel) ?? __instance._difficultySegmentedControl._texts[i]
+                    : __instance._difficultySegmentedControl._texts[i])
+                .ToArray();
+
+            for (var i = 0; i < __instance._difficultySegmentedControl._texts.Count; i++)
             {
-                __result = difficultyLabel.Replace("<", "<\u200B").Replace(">", ">\u200B");
+                ((TextSegmentedControlCell)__instance._difficultySegmentedControl.cells[i]).text = __instance._difficultySegmentedControl._texts[i];
             }
         }
 
-        [AffinityPatch(typeof(BeatmapCharacteristicSegmentedControlController), nameof(BeatmapCharacteristicSegmentedControlController.SetData))]
-        private void SelectDefaultCharacteristic()
+        [AffinityPatch(typeof(LevelBar), nameof(LevelBar.SetupData))]
+        private void SetupData(LevelBar __instance, BeatmapDifficulty beatmapDifficulty, BeatmapCharacteristicSO beatmapCharacteristic)
         {
-            if (_songData == null || _songData._defaultCharacteristic == null || _songData._defaultCharacteristic == _beatmapCharacteristicSegmentedControlController.selectedBeatmapCharacteristic.serializedName)
+            if (_songData == null || !_config.DisplayDiffLabels || !__instance._showDifficultyAndCharacteristic)
             {
                 return;
             }
 
-            var index = _beatmapCharacteristicSegmentedControlController._currentlyAvailableBeatmapCharacteristics.FindIndex(c => c.serializedName == _songData._defaultCharacteristic);
+            if (_characteristicDifficultyLabels.TryGetValue(beatmapCharacteristic.serializedName, out var difficultyLabels) && difficultyLabels.TryGetValue(beatmapDifficulty, out var difficultyLabel))
+            {
+                __instance._difficultyText.text = GetDifficultyLabel(difficultyLabel) ?? __instance._difficultyText.text;
+            }
+
+            var characteristicDetails = _songData._characteristicDetails?.FirstOrDefault(d => d._beatmapCharacteristicName == beatmapCharacteristic.serializedName);
+            if (characteristicDetails != null)
+            {
+                var sprite = GetCharacteristicIcon(characteristicDetails._characteristicIconFilePath);
+                if (sprite != null)
+                {
+                    __instance._characteristicIconImageView.sprite = sprite;
+                }
+            }
+        }
+
+        // TODO: Find a way to add a limitation to the size of the text.
+        private string? GetDifficultyLabel(string difficultyLabel)
+        {
+            return string.IsNullOrWhiteSpace(difficultyLabel) ? null : difficultyLabel.Replace("<", "<\u200B").Replace(">", ">\u200B");
+        }
+
+        [AffinityPatch(typeof(BeatmapCharacteristicSegmentedControlController), nameof(BeatmapCharacteristicSegmentedControlController.SetData))]
+        private void SelectDefaultCharacteristic(BeatmapCharacteristicSegmentedControlController __instance)
+        {
+            if (_songData == null || _songData._defaultCharacteristic == null || _songData._defaultCharacteristic == __instance.selectedBeatmapCharacteristic.serializedName)
+            {
+                return;
+            }
+
+            var index = __instance._currentlyAvailableBeatmapCharacteristics.FindIndex(c => c.serializedName == _songData._defaultCharacteristic);
             if (index != -1)
             {
-                _beatmapCharacteristicSegmentedControlController._segmentedControl.SelectCellWithNumber(index);
-                _beatmapCharacteristicSegmentedControlController._selectedBeatmapCharacteristic = _beatmapCharacteristicSegmentedControlController._currentlyAvailableBeatmapCharacteristics[index];
+                __instance._segmentedControl.SelectCellWithNumber(index);
+                __instance._selectedBeatmapCharacteristic = __instance._currentlyAvailableBeatmapCharacteristics[index];
             }
         }
 
         [AffinityPatch(typeof(BeatmapCharacteristicSegmentedControlController), nameof(BeatmapCharacteristicSegmentedControlController.SetData))]
-        private void SetCosmeticCharacteristic(BeatmapCharacteristicSO selectedBeatmapCharacteristic)
+        private void SetCosmeticCharacteristic(BeatmapCharacteristicSegmentedControlController __instance, BeatmapCharacteristicSO selectedBeatmapCharacteristic)
         {
             if (_songData == null || _songData._characteristicDetails == null || !_config.DisplayCustomCharacteristics)
             {
                 return;
             }
 
-            var hasCosmeticCharacteristic = false;
-
             foreach (var characteristicDetails in _songData._characteristicDetails)
             {
-                var index = _beatmapCharacteristicSegmentedControlController._currentlyAvailableBeatmapCharacteristics.FindIndex(c => c.serializedName == characteristicDetails._beatmapCharacteristicName);
+                var index = __instance._currentlyAvailableBeatmapCharacteristics.FindIndex(c => c.serializedName == characteristicDetails._beatmapCharacteristicName);
 
                 if (index == -1)
                 {
                     continue;
                 }
 
-                hasCosmeticCharacteristic = true;
-
-                var dataItem = _beatmapCharacteristicSegmentedControlController._segmentedControl._dataItems[index];
+                var dataItem = __instance._segmentedControl._dataItems[index];
+                var cell = (IconSegmentedControlCell)__instance._segmentedControl.cells[index];
 
                 if (!string.IsNullOrWhiteSpace(characteristicDetails._characteristicLabel))
                 {
                     dataItem.hintText = characteristicDetails._characteristicLabel;
+                    cell.hintText = characteristicDetails._characteristicLabel;
                 }
 
-                if (!string.IsNullOrWhiteSpace(characteristicDetails._characteristicIconFilePath))
+                var icon = GetCharacteristicIcon(characteristicDetails._characteristicIconFilePath);
+                if (icon != null)
                 {
-                    var spritePath = Path.Combine(_customLevelLoader._loadedBeatmapSaveData[_standardLevelDetailViewController.beatmapLevel.levelID].customLevelFolderInfo.folderPath, characteristicDetails._characteristicIconFilePath);
-
-                    if (!_characteristicDetailsSprites.TryGetValue(spritePath, out var icon))
-                    {
-                        if ((icon = Utils.LoadSpriteFromFile(spritePath)) == null)
-                        {
-                            continue;
-                        }
-
-                        _characteristicDetailsSprites.Add(spritePath, icon);
-                    }
-
                     dataItem.icon = icon;
-                }
-            }
-
-            if (hasCosmeticCharacteristic)
-            {
-                var selectedCellNumber = _beatmapCharacteristicSegmentedControlController._segmentedControl.selectedCellNumber;
-
-                _beatmapCharacteristicSegmentedControlController._segmentedControl.SetData(_beatmapCharacteristicSegmentedControlController._segmentedControl._dataItems);
-
-                if (selectedCellNumber != 0)
-                {
-                    _beatmapCharacteristicSegmentedControlController._segmentedControl.SelectCellWithNumber(selectedCellNumber);
+                    cell.sprite = icon;
                 }
             }
         }
 
+        private Sprite? GetCharacteristicIcon(string? characteristicIconFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(characteristicIconFilePath))
+            {
+                return null;
+            }
+
+            var spritePath = Path.Combine(_customLevelLoader._loadedBeatmapSaveData[_standardLevelDetailViewController.beatmapLevel.levelID].customLevelFolderInfo.folderPath, characteristicIconFilePath);
+            if (!_characteristicDetailsSprites.TryGetValue(spritePath, out var icon))
+            {
+                if ((icon = Utils.LoadSpriteFromFile(spritePath)) != null)
+                {
+                    _characteristicDetailsSprites.Add(spritePath, icon);
+                }
+            }
+
+            return icon;
+        }
+
         [AffinityPatch(typeof(StandardLevelDetailView), nameof(StandardLevelDetailView.RefreshContent))]
-        private void HandleBeatmapRequirements(StandardLevelDetailView __instance)
+        private void ProcessBeatmapRequirements(StandardLevelDetailView __instance)
         {
             var beatmapLevel = _standardLevelDetailViewController.beatmapLevel;
             var beatmapKey = __instance.beatmapKey;
