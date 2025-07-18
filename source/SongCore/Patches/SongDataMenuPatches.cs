@@ -7,6 +7,7 @@ using SiraUtil.Affinity;
 using SongCore.Data;
 using SongCore.UI;
 using SongCore.Utilities;
+using TMPro;
 using UnityEngine;
 using Zenject;
 
@@ -87,7 +88,10 @@ namespace SongCore.Patches
 
             for (var i = 0; i < __instance._difficultySegmentedControl._texts.Count; i++)
             {
-                ((TextSegmentedControlCell)__instance._difficultySegmentedControl.cells[i]).text = __instance._difficultySegmentedControl._texts[i];
+                var cell = (TextSegmentedControlCell)__instance._difficultySegmentedControl.cells[i];
+                cell._text.overflowMode = TextOverflowModes.Ellipsis;
+                cell._text.enableWordWrapping = false;
+                cell.text = __instance._difficultySegmentedControl._texts[i];
             }
         }
 
@@ -101,6 +105,8 @@ namespace SongCore.Patches
 
             if (_characteristicDifficultyLabels.TryGetValue(beatmapCharacteristic.serializedName, out var difficultyLabels) && difficultyLabels.TryGetValue(beatmapDifficulty, out var difficultyLabel))
             {
+                __instance._difficultyText.overflowMode = TextOverflowModes.Ellipsis;
+                __instance._difficultyText.enableWordWrapping = false;
                 __instance._difficultyText.text = GetDifficultyLabel(difficultyLabel) ?? __instance._difficultyText.text;
             }
 
@@ -115,7 +121,6 @@ namespace SongCore.Patches
             }
         }
 
-        // TODO: Find a way to add a limitation to the size of the text.
         private string? GetDifficultyLabel(string difficultyLabel)
         {
             return string.IsNullOrWhiteSpace(difficultyLabel) ? null : difficultyLabel.Replace("<", "<\u200B").Replace(">", ">\u200B");
