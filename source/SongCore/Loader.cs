@@ -251,18 +251,18 @@ namespace SongCore
                 }
             }
 
-            await UnityGame.SwitchToMainThreadAsync();
-
-            _beatmapLevelsModel.ClearLoadedBeatmapLevelsCaches();
-            _beatmapLevelsModel._customLevelsRepository = CustomLevelsRepository;
-            _beatmapLevelsModel.LoadAllBeatmapLevelPacks();
-
             foreach (var (levelID, loadedSaveData) in LoadedBeatmapSaveData)
             {
                 _customLevelLoader._loadedBeatmapSaveData[levelID] = loadedSaveData;
             }
 
             LoadedBeatmapSaveData.Clear();
+
+            await UnityGame.SwitchToMainThreadAsync();
+
+            _beatmapLevelsModel.ClearLoadedBeatmapLevelsCaches();
+            _beatmapLevelsModel._customLevelsRepository = CustomLevelsRepository;
+            _beatmapLevelsModel.LoadAllBeatmapLevelPacks();
 
             if (!_loadingTaskCancellationTokenSource.IsCancellationRequested && _levelFilteringNavigationController.isActiveAndEnabled)
             {
