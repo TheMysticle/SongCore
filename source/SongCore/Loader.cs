@@ -469,68 +469,68 @@ namespace SongCore
 
                     Parallel.ForEach(songFolders, parallelOptions, folder =>
                     {
-                      string[] results;
-                      try
-                      {
-                          results = Directory.GetFiles(folder, CustomLevelPathHelper.kStandardLevelInfoFilename, SearchOption.TopDirectoryOnly);
-                      }
-                      catch (Exception ex)
-                      {
-                          Plugin.Log.Warn($"Skipping missing or corrupt folder: '{folder}'");
-                          Plugin.Log.Warn(ex);
-                          return;
-                      }
+                        string[] results;
+                        try
+                        {
+                            results = Directory.GetFiles(folder, CustomLevelPathHelper.kStandardLevelInfoFilename, SearchOption.TopDirectoryOnly);
+                        }
+                        catch (Exception ex)
+                        {
+                            Plugin.Log.Warn($"Skipping missing or corrupt folder: '{folder}'");
+                            Plugin.Log.Warn(ex);
+                            return;
+                        }
 
-                      if (results.Length == 0)
-                      {
-                          Plugin.Log.Warn($"Folder: '{folder}' is missing {CustomLevelPathHelper.kStandardLevelInfoFilename} file!");
-                          return;
-                      }
+                        if (results.Length == 0)
+                        {
+                            Plugin.Log.Warn($"Folder: '{folder}' is missing {CustomLevelPathHelper.kStandardLevelInfoFilename} file!");
+                            return;
+                        }
 
-                      foreach (var result in results)
-                      {
-                          try
-                          {
-                              var songPath = Path.GetDirectoryName(result)!;
-                              if (Directory.GetParent(songPath)?.Name == "Backups")
-                              {
-                                  continue;
-                              }
+                        foreach (var result in results)
+                        {
+                            try
+                            {
+                                var songPath = Path.GetDirectoryName(result)!;
+                                if (Directory.GetParent(songPath)?.Name == "Backups")
+                                {
+                                    continue;
+                                }
 
-                              if (!fullRefresh && (CustomLevels.ContainsKey(songPath) || CustomWIPLevels.ContainsKey(songPath)))
-                              {
-                                  continue;
-                              }
+                                if (!fullRefresh && (CustomLevels.ContainsKey(songPath) || CustomWIPLevels.ContainsKey(songPath)))
+                                {
+                                    continue;
+                                }
 
-                              var wip = songPath.Contains("CustomWIPLevels");
-                              var customLevel = LoadCustomLevel(songPath);
-                              if (!customLevel.HasValue)
-                              {
-                                  Plugin.Log.Error($"Failed to load custom level: {folder}");
-                                  continue;
-                              }
+                                var wip = songPath.Contains("CustomWIPLevels");
+                                var customLevel = LoadCustomLevel(songPath);
+                                if (!customLevel.HasValue)
+                                {
+                                    Plugin.Log.Error($"Failed to load custom level: {folder}");
+                                    continue;
+                                }
 
-                              var (_, level) = customLevel.Value;
-                              if (!wip)
-                              {
-                                  CustomLevelsById[level.levelID] = level;
-                                  CustomLevels[songPath] = level;
-                              }
-                              else
-                              {
-                                  CustomWIPLevels[songPath] = level;
-                              }
+                                var (_, level) = customLevel.Value;
+                                if (!wip)
+                                {
+                                    CustomLevelsById[level.levelID] = level;
+                                    CustomLevels[songPath] = level;
+                                }
+                                else
+                                {
+                                    CustomWIPLevels[songPath] = level;
+                                }
 
-                              foundSongPaths.TryAdd(songPath, false);
-                          }
-                          catch (Exception e)
-                          {
-                              Plugin.Log.Error($"Failed to load song folder: {result}");
-                              Plugin.Log.Error(e);
-                          }
-                      }
+                                foundSongPaths.TryAdd(songPath, false);
+                            }
+                            catch (Exception e)
+                            {
+                                Plugin.Log.Error($"Failed to load song folder: {result}");
+                                Plugin.Log.Error(e);
+                            }
+                        }
 
-                      LoadingProgress = (float) Interlocked.Increment(ref processedSongsCount) / songFoldersCount;
+                        LoadingProgress = (float) Interlocked.Increment(ref processedSongsCount) / songFoldersCount;
                     });
 
                     #endregion
