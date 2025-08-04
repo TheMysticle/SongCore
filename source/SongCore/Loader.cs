@@ -539,7 +539,7 @@ namespace SongCore
 
                     // Load beatmaps in separate song folders (created in folders.xml or by other mods)
                     // Assign beatmaps to their respective pack (custom levels, wip levels, or separate)
-                    UnityMainThreadTaskScheduler.Factory.StartNew(() => _progressBar.ShowMessage($"Loading {SeparateSongFolders.Count} separate folders", true));
+                    await UnityMainThreadTaskScheduler.Factory.StartNew(() => _progressBar.ShowMessage($"Loading {SeparateSongFolders.Count} separate folders", true));
                     foreach (var entry in SeparateSongFolders)
                     {
                         try
