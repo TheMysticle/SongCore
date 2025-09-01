@@ -71,6 +71,13 @@ namespace SongCore.Patches
             }
         }
 
+        [AffinityPatch(typeof(BeatmapDifficultySegmentedControlController), nameof(BeatmapDifficultySegmentedControlController.Awake))]
+        private void LimitTextSize(BeatmapDifficultySegmentedControlController __instance)
+        {
+            __instance._difficultySegmentedControl._enableWordWrapping = false;
+            __instance._difficultySegmentedControl._textOverflowMode = TextOverflowModes.Ellipsis;
+        }
+
         [AffinityPatch(typeof(BeatmapDifficultySegmentedControlController), nameof(BeatmapDifficultySegmentedControlController.SetData))]
         private void SetData(BeatmapDifficultySegmentedControlController __instance)
         {
@@ -89,8 +96,6 @@ namespace SongCore.Patches
             for (var i = 0; i < __instance._difficultySegmentedControl._texts.Count; i++)
             {
                 var cell = (TextSegmentedControlCell)__instance._difficultySegmentedControl.cells[i];
-                cell._text.overflowMode = TextOverflowModes.Ellipsis;
-                cell._text.enableWordWrapping = false;
                 cell.text = __instance._difficultySegmentedControl._texts[i];
             }
         }
@@ -105,8 +110,8 @@ namespace SongCore.Patches
 
             if (_characteristicDifficultyLabels.TryGetValue(beatmapCharacteristic.serializedName, out var difficultyLabels) && difficultyLabels.TryGetValue(beatmapDifficulty, out var difficultyLabel))
             {
+                __instance._difficultyText.textWrappingMode = TextWrappingModes.NoWrap;
                 __instance._difficultyText.overflowMode = TextOverflowModes.Ellipsis;
-                __instance._difficultyText.enableWordWrapping = false;
                 __instance._difficultyText.text = GetDifficultyLabel(difficultyLabel) ?? __instance._difficultyText.text;
             }
 

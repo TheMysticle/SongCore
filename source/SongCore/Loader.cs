@@ -1079,7 +1079,7 @@ namespace SongCore
             if (version < BeatmapSaveDataHelpers.version4)
             {
                 var standardLevelInfoSaveData = StandardLevelInfoSaveData.DeserializeFromJSONString(json);
-                if (standardLevelInfoSaveData == null)
+                if (standardLevelInfoSaveData == null || standardLevelInfoSaveData.difficultyBeatmapSets.Length == 0)
                 {
                     return null;
                 }
@@ -1095,7 +1095,7 @@ namespace SongCore
             else
             {
                 var beatmapLevelSaveData = JsonConvert.DeserializeObject<BeatmapLevelSaveData>(json, JsonSettings.readableWithDefault);
-                if (beatmapLevelSaveData == null)
+                if (beatmapLevelSaveData == null || beatmapLevelSaveData.difficultyBeatmaps.Length == 0)
                 {
                     return null;
                 }

@@ -175,6 +175,7 @@ namespace SongCore.UI
 
             _canvas = gameObject.AddComponent<Canvas>();
             _canvas.renderMode = RenderMode.WorldSpace;
+            _canvas.additionalShaderChannels |= AdditionalCanvasShaderChannels.TexCoord2;
             _canvas.enabled = false;
             _canvasGroup = gameObject.AddComponent<CanvasGroup>();
             _canvasGroup.alpha = 0f;
