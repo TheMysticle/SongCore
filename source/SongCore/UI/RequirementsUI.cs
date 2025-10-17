@@ -18,15 +18,17 @@ namespace SongCore.UI
     {
         private readonly StandardLevelDetailViewController _standardLevelDetailViewController;
         private readonly CustomLevelLoader _customLevelLoader;
+        private readonly EnvironmentsListModel _environmentsListModel;
         private readonly TimeTweeningManager _tweeningManager;
         private readonly BSMLParser _bsmlParser;
         private readonly PluginConfig _config;
         private readonly ColorsUI _colorsUI;
 
-        private RequirementsUI(StandardLevelDetailViewController standardLevelDetailViewController, CustomLevelLoader customLevelLoader, TimeTweeningManager tweeningManager, BSMLParser bsmlParser, PluginConfig config, ColorsUI colorsUI)
+        private RequirementsUI(StandardLevelDetailViewController standardLevelDetailViewController, CustomLevelLoader customLevelLoader, EnvironmentsListModel environmentsListModel, TimeTweeningManager tweeningManager, BSMLParser bsmlParser, PluginConfig config, ColorsUI colorsUI)
         {
             _standardLevelDetailViewController = standardLevelDetailViewController;
             _customLevelLoader = customLevelLoader;
+            _environmentsListModel = environmentsListModel;
             _tweeningManager = tweeningManager;
             _bsmlParser = bsmlParser;
             _config = config;
@@ -236,7 +238,7 @@ namespace SongCore.UI
                     {
                         if (environmentInfoName != beatmapLevel.GetEnvironmentName(beatmapKey.Value.beatmapCharacteristic, beatmapKey.Value.difficulty))
                         {
-                            environmentName = Loader.CustomLevelLoader._environmentsListModel.GetEnvironmentInfoBySerializedNameSafe(environmentInfoName).environmentName;
+                            environmentName = _environmentsListModel.GetEnvironmentInfoBySerializedNameSafe(environmentInfoName).environmentName;
                         }
                     }
                 }
