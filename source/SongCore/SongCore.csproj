@@ -55,10 +55,6 @@
     <Reference Include="Main" Publicize="true" />
     <Reference Include="MediaLoader" />
     <Reference Include="Menu.ColorSettings" />
-    <Reference Include="MonoMod.Utils">
-      <HintPath>$(BeatSaberDir)\Libs\MonoMod.Utils.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
     <Reference Include="netstandard" />
     <Reference Include="Newtonsoft.Json" />
     <Reference Include="SegmentedControl" Publicize="true" />
