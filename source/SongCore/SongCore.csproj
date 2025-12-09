@@ -33,6 +33,7 @@
       <Private>false</Private>
     </Reference>
     <Reference Include="BeatmapCore" />
+    <Reference Include="BeatSaber.Destinations" />
     <Reference Include="BeatSaber.ViewSystem" />
     <Reference Include="BGLib.AppFlow" />
     <Reference Include="BGLib.JsonExtension" />

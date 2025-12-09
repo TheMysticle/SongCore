@@ -310,8 +310,9 @@ namespace SongCore.Patches
             __instance.practiceButton.interactable = _practiceButtonInteractable;
         }
 
-        [AffinityPatch(typeof(StandardLevelScenesTransitionSetupDataSO), nameof(StandardLevelScenesTransitionSetupDataSO.InitColorInfo))]
-        private void SetSoloOverrideColorScheme(StandardLevelScenesTransitionSetupDataSO __instance)
+        [AffinityPatch(typeof(StandardLevelScenesTransitionSetupDataSO), nameof(StandardLevelScenesTransitionSetupDataSO.colorScheme), AffinityMethodType.Setter)]
+        [AffinityPrefix]
+        private void SetSoloOverrideColorScheme(StandardLevelScenesTransitionSetupDataSO __instance, ref ColorScheme value)
         {
             if (_config is { CustomSongNoteColors: false, CustomSongEnvironmentColors: false, CustomSongObstacleColors: false })
             {
@@ -319,18 +320,19 @@ namespace SongCore.Patches
             }
 
             var songData = Collections.GetCustomLevelSongDifficultyData(__instance.beatmapKey);
-            var overrideColorScheme = GetOverrideColorScheme(songData, __instance.colorScheme);
+            var overrideColorScheme = GetOverrideColorScheme(songData, value);
             if (overrideColorScheme is null)
             {
                 return;
             }
 
             __instance.usingOverrideColorScheme = true;
-            __instance.colorScheme = overrideColorScheme;
+            value = overrideColorScheme;
         }
 
-        [AffinityPatch(typeof(MultiplayerLevelScenesTransitionSetupDataSO), nameof(MultiplayerLevelScenesTransitionSetupDataSO.InitColorInfo))]
-        private void SetMultiplayerOverrideColorScheme(MultiplayerLevelScenesTransitionSetupDataSO __instance)
+        [AffinityPatch(typeof(MultiplayerLevelScenesTransitionSetupDataSO), nameof(MultiplayerLevelScenesTransitionSetupDataSO.colorScheme), AffinityMethodType.Setter)]
+        [AffinityPrefix]
+        private void SetMultiplayerOverrideColorScheme(MultiplayerLevelScenesTransitionSetupDataSO __instance, ref ColorScheme value)
         {
             if (_config is { CustomSongNoteColors: false, CustomSongEnvironmentColors: false, CustomSongObstacleColors: false })
             {
@@ -338,14 +340,14 @@ namespace SongCore.Patches
             }
 
             var songData = Collections.GetCustomLevelSongDifficultyData(__instance.beatmapKey);
-            var overrideColorScheme = GetOverrideColorScheme(songData, __instance.colorScheme);
+            var overrideColorScheme = GetOverrideColorScheme(songData, value);
             if (overrideColorScheme is null)
             {
                 return;
             }
 
             __instance.usingOverrideColorScheme = true;
-            __instance.colorScheme = overrideColorScheme;
+            value = overrideColorScheme;
         }
 
         private ColorScheme? GetOverrideColorScheme(SongData.DifficultyData? songDifficultyData, ColorScheme currentColorScheme)

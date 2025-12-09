@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
+using BeatSaber.Destinations;
 using BeatSaberMarkupLanguage;
 using SongCore.Utilities;
 using TMPro;
@@ -122,7 +123,7 @@ namespace SongCore.UI
 
         private void SceneManagerOnActiveSceneChanged(Scene oldScene, Scene newScene)
         {
-            if (newScene.name == "MainMenu")
+            if (newScene.name == SceneNames.kMainMenuSceneName)
             {
                 if (_showingMessage)
                 {

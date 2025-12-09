@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using BeatmapDataLoaderVersion4;
 using BeatmapLevelSaveDataVersion4;
 using BeatmapSaveDataVersion4;
+using BeatSaber.Destinations;
 using BeatSaberMarkupLanguage.Settings;
 using BGLib.JsonExtension;
 using IPA.Utilities;
@@ -274,7 +275,7 @@ namespace SongCore
 
         public void RefreshSongs(bool fullRefresh = true)
         {
-            if (AreSongsLoading || SceneManager.GetActiveScene().name == "GameCore")
+            if (AreSongsLoading || SceneManager.GetActiveScene().name == SceneNames.kGameCoreSceneName)
             {
                 return;
             }
