@@ -7,9 +7,9 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-<!--    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>-->
     <EnableFrameworkPathOverride>true</EnableFrameworkPathOverride>
     <FrameworkPathOverride>$(BeatSaberDir)\Beat Saber_Data\Managed</FrameworkPathOverride>
+<!--    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>-->
 <!--    <NoStdLib>true</NoStdLib>-->
 <!--    <MarkPackageReferencesAsExternallyResolved>false</MarkPackageReferencesAsExternallyResolved>-->
 <!--    <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>-->
@@ -19,23 +19,24 @@
   <ItemGroup>
     <PackageReference Include="BeatSaberModdingTools.Tasks" Version="2.0.0-beta7">
       <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <IncludeAssets>build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.2">
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3">
       <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <IncludeAssets>build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="PolySharp" Version="1.15.0">
       <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <IncludeAssets>build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
 
+  <ItemDefinitionGroup>
+    <Reference Private="false" />
+  </ItemDefinitionGroup>
+
   <ItemGroup>
-    <Reference Include="0Harmony">
-      <HintPath>$(BeatSaberDir)\Libs\0Harmony.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
+    <Reference Include="0Harmony" HintPath="$(BeatSaberDir)\Libs\0Harmony.dll" />
     <Reference Include="AdditionalContentModel.Interfaces" />
     <Reference Include="BeatmapCore" />
     <Reference Include="BeatSaber.Destinations" />
@@ -44,30 +45,22 @@
     <Reference Include="BGLib.JsonExtension" />
     <Reference Include="BGLib.Polyglot" />
     <Reference Include="BGLib.UnityExtension" />
-    <Reference Include="BSML">
-      <HintPath>$(BeatSaberDir)\Plugins\BSML.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
+    <Reference Include="BSML" HintPath="$(BeatSaberDir)\Plugins\BSML.dll" />
     <Reference Include="Colors" />
     <Reference Include="DataModels" Publicize="true" />
     <Reference Include="GameplayCore" />
     <Reference Include="HMLib" Publicize="true" />
     <Reference Include="HMUI" />
     <Reference Include="Interactable" />
-    <Reference Include="IPA.Loader">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\IPA.Loader.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
+    <Reference Include="IPA.Loader" HintPath="$(BeatSaberDir)\Beat Saber_Data\Managed\IPA.Loader.dll" />
     <Reference Include="Main" Publicize="true" />
     <Reference Include="MediaLoader" />
     <Reference Include="Menu.ColorSettings" />
     <Reference Include="netstandard" />
     <Reference Include="Newtonsoft.Json" />
     <Reference Include="SegmentedControl" Publicize="true" />
-    <Reference Include="SiraUtil">
-      <HintPath>$(BeatSaberDir)\Plugins\SiraUtil.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
+    <Reference Include="SiraUtil" HintPath="$(BeatSaberDir)\Plugins\SiraUtil.dll" />
+    <Reference Include="System.IO.Compression" />
     <Reference Include="Tweening" />
     <Reference Include="Unity.TextMeshPro" />
     <Reference Include="UnityEngine" />
