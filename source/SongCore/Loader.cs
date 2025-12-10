@@ -372,7 +372,7 @@ namespace SongCore
                             var cachePath = Path.Combine(_customWIPPath, "Cache");
                             CacheZIPs(cachePath, _customWIPPath);
 
-                            var cacheFolders = Directory.GetDirectories(cachePath);
+                            var cacheFolders = Directory.EnumerateDirectories(cachePath);
                             await LoadCachedZIPs(cacheFolders, fullRefresh, CachedWIPLevels);
                         }
                         catch (Exception ex)
@@ -413,8 +413,8 @@ namespace SongCore
                     #region LoadCustomLevels
 
                     // Get Levels from CustomLevels and CustomWIPLevels folders
-                    var songFolders = new DirectoryInfo(_customLevelsPath).GetDirectories()
-                        .Concat(new DirectoryInfo(_customWIPPath).GetDirectories())
+                    var songFolders = new DirectoryInfo(_customLevelsPath).EnumerateDirectories()
+                        .Concat(new DirectoryInfo(_customWIPPath).EnumerateDirectories())
                         .Where(d => d.Exists && !d.Attributes.HasFlag(FileAttributes.Hidden))
                         .Select(d => d.FullName)
                         .ToArray();
@@ -434,7 +434,7 @@ namespace SongCore
                                 .Select(f => Path.GetFullPath(f.SongFolderEntry.Path))
                                 .Select(p => new DirectoryInfo(p))
                                 .Where(d => d.Exists)
-                                .SelectMany(d => d.GetDirectories()
+                                .SelectMany(d => d.EnumerateDirectories()
                                     .Where(d => d.Exists && !d.Attributes.HasFlag(FileAttributes.Hidden))
                                     .Select(d => d.FullName)))
                             .ToHashSet();
@@ -460,7 +460,7 @@ namespace SongCore
                         string[] results;
                         try
                         {
-                            results = Directory.GetFiles(folder, CustomLevelPathHelper.kStandardLevelInfoFilename, SearchOption.TopDirectoryOnly);
+                            results = Directory.GetFiles(folder, CustomLevelPathHelper.kStandardLevelInfoFilename);
                         }
                         catch (Exception ex)
                         {
@@ -547,7 +547,7 @@ namespace SongCore
                                 string[] results;
                                 try
                                 {
-                                    results = Directory.GetFiles(folder, CustomLevelPathHelper.kStandardLevelInfoFilename, SearchOption.TopDirectoryOnly);
+                                    results = Directory.GetFiles(folder, CustomLevelPathHelper.kStandardLevelInfoFilename);
                                 }
                                 catch (Exception ex)
                                 {
@@ -949,17 +949,17 @@ namespace SongCore
             }
 
             var cache = new DirectoryInfo(cachePath);
-            foreach (var file in cache.GetFiles())
+            foreach (var file in cache.EnumerateFiles())
             {
                 file.Delete();
             }
 
-            foreach (var folder in cache.GetDirectories())
+            foreach (var folder in cache.EnumerateDirectories())
             {
                 folder.Delete(true);
             }
 
-            var zips = Directory.GetFiles(songFolderPath, "*.zip", SearchOption.TopDirectoryOnly);
+            var zips = Directory.EnumerateFiles(songFolderPath, "*.zip");
 
             foreach (var zip in zips)
             {
@@ -992,7 +992,7 @@ namespace SongCore
                 string[] results;
                 try
                 {
-                    results = Directory.GetFiles(cachedFolder, CustomLevelPathHelper.kStandardLevelInfoFilename, SearchOption.TopDirectoryOnly);
+                    results = Directory.GetFiles(cachedFolder, CustomLevelPathHelper.kStandardLevelInfoFilename);
                 }
                 catch (DirectoryNotFoundException)
                 {

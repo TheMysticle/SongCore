@@ -129,7 +129,7 @@ namespace SongCore.Utilities
         {
             long hash = 0;
             DirectoryInfo directoryInfo = new DirectoryInfo(directory);
-            foreach (FileInfo f in directoryInfo.GetFiles())
+            foreach (FileInfo f in directoryInfo.EnumerateFiles())
             {
                 hash ^= f.CreationTimeUtc.ToFileTimeUtc();
                 hash ^= f.LastWriteTimeUtc.ToFileTimeUtc();
