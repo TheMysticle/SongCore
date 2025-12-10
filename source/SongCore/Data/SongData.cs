@@ -239,7 +239,7 @@ namespace SongCore.Data
                             var difficulty = Utils.ToEnum((string)difficultyBeatmap["_difficulty"], BeatmapDifficulty.Normal);
                             var beatmapColorSchemeIdx = difficultyBeatmap.Value<int?>("_beatmapColorSchemeIdx");
                             var environmentNameIdx = difficultyBeatmap.Value<int?>("_environmentNameIdx");
-                            bool useSongCoreColors = true;
+                            var useSongCoreColors = true;
 
                             if (beatmapColorSchemeIdx != null)
                             {
@@ -438,7 +438,7 @@ namespace SongCore.Data
                         var difficulty = Utils.ToEnum((string)difficultyBeatmap["difficulty"], BeatmapDifficulty.Normal);
                         var beatmapColorSchemeIdx = difficultyBeatmap.Value<int?>("beatmapColorSchemeIdx");
                         var environmentNameIdx = difficultyBeatmap.Value<int?>("environmentNameIdx");
-                        bool useSongCoreColors = true;
+                        var useSongCoreColors = true;
 
                         if (beatmapColorSchemeIdx != null)
                         {

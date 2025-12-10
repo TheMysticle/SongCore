@@ -150,7 +150,7 @@ namespace SongCore.UI
         private void SongLoaderOnSongsLoadedEvent(Loader loader, ConcurrentDictionary<string, BeatmapLevel> customLevels)
         {
             _showingMessage = false;
-            string songOrSongs = customLevels.Count == 1 ? "song" : "songs";
+            var songOrSongs = customLevels.Count == 1 ? "song" : "songs";
             _headerText.text = $"{customLevels.Count} {(_jokeTime ? $"{songOrSongs} deleted" : $"{songOrSongs} loaded")}";
             _loadingBar.enabled = false;
             _loadingBackg.enabled = false;

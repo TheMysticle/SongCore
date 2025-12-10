@@ -128,8 +128,8 @@ namespace SongCore.Utilities
         private static long GetDirectoryHash(string directory)
         {
             long hash = 0;
-            DirectoryInfo directoryInfo = new DirectoryInfo(directory);
-            foreach (FileInfo f in directoryInfo.EnumerateFiles())
+            var directoryInfo = new DirectoryInfo(directory);
+            foreach (var f in directoryInfo.EnumerateFiles())
             {
                 hash ^= f.CreationTimeUtc.ToFileTimeUtc();
                 hash ^= f.LastWriteTimeUtc.ToFileTimeUtc();
@@ -308,7 +308,7 @@ namespace SongCore.Utilities
 
         public static bool IsInInstallPath(string path)
         {
-            string fromPath = IPA.Utilities.UnityGame.InstallPath;
+            var fromPath = IPA.Utilities.UnityGame.InstallPath;
 
             if (!fromPath.EndsWith(Path.DirectorySeparatorChar))
             {
@@ -321,9 +321,9 @@ namespace SongCore.Utilities
         // Black magic https://stackoverflow.com/questions/311165/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-and-vice-versa/14333437#14333437
         private static string ByteToHexBitFiddle(byte[] bytes)
         {
-            char[] c = new char[bytes.Length * 2];
+            var c = new char[bytes.Length * 2];
             int b;
-            for (int i = 0; i < bytes.Length; i++)
+            for (var i = 0; i < bytes.Length; i++)
             {
                 b = bytes[i] >> 4;
                 c[i * 2] = (char) (55 + b + (((b - 10) >> 31) & -7));

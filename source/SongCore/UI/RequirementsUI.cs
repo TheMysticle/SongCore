@@ -183,7 +183,7 @@ namespace SongCore.UI
             {
                 if (diffData.additionalDifficultyData._requirements.Any())
                 {
-                    foreach (string req in diffData.additionalDifficultyData._requirements)
+                    foreach (var req in diffData.additionalDifficultyData._requirements)
                     {
                         customListTableData.Data.Add(!Collections.capabilities.Contains(req)
                             ? new CustomCellInfo($"<size=75%>{req}", "Missing Requirement", MissingReqIcon)
@@ -245,7 +245,7 @@ namespace SongCore.UI
 
                 if (diffData.additionalDifficultyData._warnings.Length > 0)
                 {
-                    foreach (string req in diffData.additionalDifficultyData._warnings)
+                    foreach (var req in diffData.additionalDifficultyData._warnings)
                     {
                         customListTableData.Data.Add(new CustomCellInfo($"<size=75%>{req}", "Warning", WarningIcon));
                     }
@@ -253,7 +253,7 @@ namespace SongCore.UI
 
                 if (diffData.additionalDifficultyData._information.Length > 0)
                 {
-                    foreach (string req in diffData.additionalDifficultyData._information)
+                    foreach (var req in diffData.additionalDifficultyData._information)
                     {
                         customListTableData.Data.Add(new CustomCellInfo($"<size=75%>{req}", "Info", InfoIcon));
                     }
@@ -261,7 +261,7 @@ namespace SongCore.UI
 
                 if (diffData.additionalDifficultyData._suggestions.Length > 0)
                 {
-                    foreach (string req in diffData.additionalDifficultyData._suggestions)
+                    foreach (var req in diffData.additionalDifficultyData._suggestions)
                     {
                         customListTableData.Data.Add(!Collections.capabilities.Contains(req)
                             ? new CustomCellInfo($"<size=75%>{req}", "Missing Suggestion", MissingSuggestionIcon)
@@ -271,9 +271,9 @@ namespace SongCore.UI
 
                 if (diffData._oneSaber != null)
                 {
-                    string enabledText = _config.DisableOneSaberOverride ? "[<color=#ff5072>Disabled</color>]" : "[<color=#89ff89>Enabled</color>]";
-                    string enabledSubtext = _config.DisableOneSaberOverride ? "enable" : "disable";
-                    string saberCountText = diffData._oneSaber.Value ? "Forced One Saber" : "Forced Standard";
+                    var enabledText = _config.DisableOneSaberOverride ? "[<color=#ff5072>Disabled</color>]" : "[<color=#89ff89>Enabled</color>]";
+                    var enabledSubtext = _config.DisableOneSaberOverride ? "enable" : "disable";
+                    var saberCountText = diffData._oneSaber.Value ? "Forced One Saber" : "Forced Standard";
                     customListTableData.Data.Add(new CustomCellInfo($"<size=75%>{saberCountText} {enabledText}", $"Map changes saber count, click here to {enabledSubtext}.", diffData._oneSaber.Value ? OneSaberIcon : StandardIcon));
                 }
 
@@ -314,7 +314,7 @@ namespace SongCore.UI
             _tweeningManager.KillAllTweens(buttonBG);
             if (shouldSet)
             {
-                FloatTween tween = new FloatTween(firstPulse ? 0 : 1, firstPulse ? 1 : 0, val =>
+                var tween = new FloatTween(firstPulse ? 0 : 1, firstPulse ? 1 : 0, val =>
                 {
                     buttonBG.color0 = new Color(1 - val, val, 0);
                     buttonBG.color1 = new Color(0, 1 - val, val);

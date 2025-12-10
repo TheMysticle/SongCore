@@ -81,7 +81,7 @@ namespace SongCore.Utilities
         public static byte[] GetResource(Assembly asm, string resourceName)
         {
             using var stream = asm.GetManifestResourceStream(resourceName)!;
-            byte[] data = new byte[stream.Length];
+            var data = new byte[stream.Length];
             stream.Read(data, 0, (int) stream.Length);
             return data;
         }
@@ -103,7 +103,7 @@ namespace SongCore.Utilities
                 return null;
             }
 
-            Texture2D tex2D = new Texture2D(2, 2);
+            var tex2D = new Texture2D(2, 2);
             return tex2D.LoadImage(file) ? tex2D : null;
         }
 

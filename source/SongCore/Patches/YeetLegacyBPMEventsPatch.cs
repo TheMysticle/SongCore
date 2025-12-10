@@ -20,9 +20,9 @@ namespace SongCore.Patches
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var codes = instructions.ToArray();
-            for (int i = 0; i < codes.Length; i++)
+            for (var i = 0; i < codes.Length; i++)
             {
-                int targetIndex = i + 3;
+                var targetIndex = i + 3;
                 // Checks for the loading onto the stack, which precedes the condition check.
                 // Skip it and `type` fetching (2 instructions as well) by branching to the condition end.
                 if (targetIndex < codes.Length &&

@@ -25,7 +25,6 @@ using SongCore.Utilities;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Zenject;
-using static GameScenesManager;
 
 namespace SongCore
 {
@@ -46,7 +45,7 @@ namespace SongCore
         private readonly string _customLevelsPath;
 
         private Task? _loadingTask;
-        private CancellationTokenSource _loadingTaskCancellationTokenSource = new CancellationTokenSource();
+        private CancellationTokenSource _loadingTaskCancellationTokenSource = new();
 
         private Loader(GameScenesManager gameScenesManager, LevelFilteringNavigationController levelFilteringNavigationController, LevelPackDetailViewController levelPackDetailViewController, BeatmapLevelsModel beatmapLevelsModel, CustomLevelLoader customLevelLoader, SpriteAsyncLoader spriteAsyncLoader, BeatmapCharacteristicCollection beatmapCharacteristicCollection, ProgressBar progressBar, PluginConfig config, SettingsController settingsController, BSMLSettings bsmlSettings)
 
@@ -133,7 +132,7 @@ namespace SongCore
             }
         }
 
-        private void HandleSceneTransitionDidFinish(SceneTransitionType sceneTransitionType, ScenesTransitionSetupDataSO scenesTransitionSetupData, DiContainer container)
+        private void HandleSceneTransitionDidFinish(GameScenesManager.SceneTransitionType sceneTransitionType, ScenesTransitionSetupDataSO scenesTransitionSetupData, DiContainer container)
         {
             _gameScenesManager.transitionDidFinishEvent -= HandleSceneTransitionDidFinish;
 
@@ -181,7 +180,7 @@ namespace SongCore
             }
         }
 
-        private void HandleSceneTransitionDidStart(SceneTransitionType sceneTransitionType, float duration)
+        private void HandleSceneTransitionDidStart(GameScenesManager.SceneTransitionType sceneTransitionType, float duration)
         {
             CancelSongLoading();
         }
@@ -310,11 +309,11 @@ namespace SongCore
 
             #endregion
 
-            ConcurrentDictionary<string, bool> foundSongPaths = fullRefresh
+            var foundSongPaths = fullRefresh
                 ? new ConcurrentDictionary<string, bool>()
                 : new ConcurrentDictionary<string, bool>(Hashing.cachedSongHashData.Keys.ToDictionary(Hashing.GetAbsolutePath, _ => false));
 
-            Action job = async () =>
+            var job = async () =>
             {
                 #region AddOfficialBeatmaps
 
@@ -388,7 +387,7 @@ namespace SongCore
 
                     if (fullRefresh)
                     {
-                        foreach (SeparateSongFolder songFolder in SeparateSongFolders)
+                        foreach (var songFolder in SeparateSongFolders)
                         {
                             if (songFolder.SongFolderEntry.CacheZIPs && songFolder.CacheFolder != null)
                             {
@@ -518,7 +517,7 @@ namespace SongCore
                             }
                         }
 
-                        LoadingProgress = (float) Interlocked.Increment(ref processedSongsCount) / songFoldersCount;
+                        LoadingProgress = (float)Interlocked.Increment(ref processedSongsCount) / songFoldersCount;
                     });
 
                     #endregion
@@ -642,7 +641,7 @@ namespace SongCore
                 #endregion
             };
 
-            Action finish = async () =>
+            var finish = async () =>
             {
                 #region CountBeatmapsAndUpdateLevelPacks
 
@@ -650,9 +649,9 @@ namespace SongCore
                 var songCountWSF = CustomLevels.Count + CustomWIPLevels.Count;
                 var songCount = songCountWSF + SeparateSongFolders.Sum(f => f.Levels.Count);
 
-                int folderCount = songCount - songCountWSF;
-                string songOrSongs = songCount == 1 ? "song" : "songs";
-                string folderOrFolders = folderCount == 1 ? "folder" : "folders";
+                var folderCount = songCount - songCountWSF;
+                var songOrSongs = songCount == 1 ? "song" : "songs";
+                var folderOrFolders = folderCount == 1 ? "folder" : "folders";
                 Plugin.Log.Info($"Loaded {songCount} new {songOrSongs} ({songCountWSF}) in CustomLevels | {folderCount} in separate {folderOrFolders}) in {stopwatch.Elapsed.TotalSeconds} seconds");
                 try
                 {
@@ -729,9 +728,7 @@ namespace SongCore
 
             try
             {
-                _loadingTask = new Task(job, _loadingTaskCancellationTokenSource.Token);
-                _loadingTask.Start();
-                await _loadingTask;
+                await (_loadingTask = Task.Run(job, _loadingTaskCancellationTokenSource.Token));
             }
             catch (Exception ex)
             {
@@ -775,7 +772,7 @@ namespace SongCore
         public async Task DeleteSongsAsync(List<string> folderPaths, bool deleteFolder = true)
         {
             DeletingSong?.Invoke();
-            foreach (string folderPath in folderPaths)
+            foreach (var folderPath in folderPaths)
             {
                 await Task.Run(() => DeleteSingleSong(folderPath, deleteFolder));
             }
@@ -866,8 +863,8 @@ namespace SongCore
                     throw new InvalidOperationException("Level save data is missing.");
                 }
 
-                string levelID = CustomLevelLoader.kCustomLevelPrefixId + hash;
-                string folderName = new DirectoryInfo(loadedSaveData.customLevelFolderInfo.folderPath).Name;
+                var levelID = CustomLevelLoader.kCustomLevelPrefixId + hash;
+                var folderName = new DirectoryInfo(loadedSaveData.customLevelFolderInfo.folderPath).Name;
                 while (!Collections.LevelHashDictionary.TryAdd(levelID + (wip ? " WIP" : ""), hash))
                 {
                     levelID += $"_{folderName}";
@@ -1163,7 +1160,7 @@ namespace SongCore
             BeatmapLevel? level = null;
             if (levelId.StartsWith(CustomLevelLoader.kCustomLevelPrefixId, StringComparison.Ordinal))
             {
-                if (CustomLevelsById.TryGetValue(levelId, out BeatmapLevel customLevel))
+                if (CustomLevelsById.TryGetValue(levelId, out var customLevel))
                 {
                     level = customLevel;
                 }
@@ -1188,7 +1185,7 @@ namespace SongCore
                 return null;
             }
 
-            CustomLevelsById.TryGetValue(CustomLevelLoader.kCustomLevelPrefixId + hash.ToUpperInvariant(), out BeatmapLevel level);
+            CustomLevelsById.TryGetValue(CustomLevelLoader.kCustomLevelPrefixId + hash.ToUpperInvariant(), out var level);
             return level;
         }
 
@@ -1196,7 +1193,7 @@ namespace SongCore
         {
             try
             {
-                string levelID = beatmapLevel.levelID;
+                var levelID = beatmapLevel.levelID;
                 float length = 0;
                 Hashing.TryGetRelativePath(loadedSaveData.customLevelFolderInfo.folderPath, out var relativePath);
                 if (Hashing.cachedAudioData.TryGetValue(relativePath, out var data))
@@ -1365,8 +1362,8 @@ namespace SongCore
 
         public static float GetLengthFromOgg(string oggFile)
         {
-            using FileStream fs = File.OpenRead(oggFile);
-            using BinaryReader br = new BinaryReader(fs, Encoding.ASCII);
+            using var fs = File.OpenRead(oggFile);
+            using var br = new BinaryReader(fs, Encoding.ASCII);
 
             /*
                  * Tries to find the array of bytes from the stream
