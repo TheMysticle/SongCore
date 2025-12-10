@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using BeatmapLevelSaveDataVersion4;
 using Newtonsoft.Json;
+using SongCore.Patches.BeatmapLevelCache;
 
 namespace SongCore.Utilities
 {
@@ -218,10 +219,19 @@ namespace SongCore.Utilities
                 .Select(difficultyBeatmap => Path.Combine(customLevelFolderInfo.folderPath, difficultyBeatmap.beatmapFilename))
                 .Where(File.Exists);
 
-            string hash = CreateSha1FromFilesWithPrependBytes(prependBytes, files);
-            TryGetRelativePath(customLevelFolderInfo.folderPath, out var relativePath);
-            cachedSongHashData[relativePath] = new SongHashData(directoryHash, hash);
-            return hash;
+            try
+            {
+                IOBlacklistPatch.AllowIO.Value = true;
+                var hash = CreateSha1FromFilesWithPrependBytes(prependBytes, files);
+                TryGetRelativePath(customLevelFolderInfo.folderPath, out var relativePath);
+                cachedSongHashData[relativePath] = new SongHashData(directoryHash, hash);
+
+                return hash;
+            }
+            finally
+            {
+                IOBlacklistPatch.AllowIO.Value = false;
+            }
         }
 
         public static string ComputeCustomLevelHash(CustomLevelFolderInfo customLevelFolderInfo, BeatmapLevelSaveData beatmapLevelSaveData)
@@ -239,10 +249,19 @@ namespace SongCore.Utilities
                 Path.Combine(customLevelFolderInfo.folderPath, difficultyBeatmap.lightshowDataFilename)
             }).Prepend(audioDataPath).Where(File.Exists);
 
-            string hash = CreateSha1FromFilesWithPrependBytes(prependBytes, files);
-            TryGetRelativePath(customLevelFolderInfo.folderPath, out var relativePath);
-            cachedSongHashData[relativePath] = new SongHashData(directoryHash, hash);
-            return hash;
+            try
+            {
+                IOBlacklistPatch.AllowIO.Value = true;
+                var hash = CreateSha1FromFilesWithPrependBytes(prependBytes, files);
+                TryGetRelativePath(customLevelFolderInfo.folderPath, out var relativePath);
+                cachedSongHashData[relativePath] = new SongHashData(directoryHash, hash);
+
+                return hash;
+            }
+            finally
+            {
+                IOBlacklistPatch.AllowIO.Value = false;
+            }
         }
 
         public static string GetAbsolutePath(string path)

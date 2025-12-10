@@ -25,6 +25,10 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="PolySharp" Version="1.15.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +36,7 @@
       <HintPath>$(BeatSaberDir)\Libs\0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="AdditionalContentModel.Interfaces" />
     <Reference Include="BeatmapCore" />
     <Reference Include="BeatSaber.Destinations" />
     <Reference Include="BeatSaber.ViewSystem" />
