@@ -92,13 +92,13 @@ namespace SongCore.Hooks.BeatmapLevelCache
         private Task<string?> GetLightshowDataJsonAsync(GetStringAsyncDelegate original, FileSystemBeatmapLevelData instance, in BeatmapKey beatmapKey)
         {
             var key = beatmapKey;
-            return _beatmapLevelCache.GetJsonDataAsync(instance, beatmapKey, BeatmapDataType.Beatmap, () => original(instance, key));
+            return _beatmapLevelCache.GetJsonDataAsync(instance, beatmapKey, BeatmapDataType.Lightshow, () => original(instance, key));
         }
 
         private Task<string?> GetOstLightshowDataJsonAsync(GetOstStringAsyncDelegate original, BeatmapLevelDataSO instance, in BeatmapKey beatmapKey)
         {
             var key = beatmapKey;
-            return _beatmapLevelCache.GetJsonDataAsync(instance, beatmapKey, BeatmapDataType.Beatmap, () => original(instance, key));
+            return _beatmapLevelCache.GetJsonDataAsync(instance, beatmapKey, BeatmapDataType.Lightshow, () => original(instance, key));
         }
 
         private string? GetAudioDataJson(Func<FileSystemBeatmapLevelData, string?> original, FileSystemBeatmapLevelData instance)
