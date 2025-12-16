@@ -109,8 +109,13 @@ namespace SongCore.Hooks.BeatmapLevelCache
             }
         }
 
-        private async Task InvokeEventAsync<TSender, TArgs>(TSender sender, TArgs? eventArgs, Delegate originalDelegate, CancellationToken cancellationToken)
+        private async Task InvokeEventAsync<TSender, TArgs>(TSender sender, TArgs? eventArgs, Delegate? originalDelegate, CancellationToken cancellationToken)
         {
+            if (originalDelegate == null)
+            {
+                return;
+            }
+
             var baseHandlers = new List<Action<TSender, TArgs?>>();
             var modHandlers = new List<Action<TSender, TArgs?>>();
 
