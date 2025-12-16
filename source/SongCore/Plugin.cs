@@ -1,6 +1,4 @@
-using System;
 using System.IO;
-using HarmonyLib;
 using IPA;
 using IPA.Config;
 using IPA.Config.Stores;
@@ -9,7 +7,6 @@ using IPA.Logging;
 using IPA.Utilities;
 using SiraUtil.Zenject;
 using SongCore.Installers;
-using SongCore.Patches;
 using SongCore.UI;
 
 namespace SongCore
@@ -18,7 +15,6 @@ namespace SongCore
     public class Plugin
     {
         private readonly PluginMetadata _metadata;
-        private readonly Harmony _harmony;
 
         internal static Logger Log { get; private set; } = null!;
 
@@ -30,7 +26,6 @@ namespace SongCore
 
             Log = logger;
             _metadata = metadata;
-            _harmony = new Harmony("com.kyle1413.BeatSaber.SongCore");
 
             zenjector.UseLogger(logger);
             zenjector.Install<AppInstaller>(Location.App, Config.GetConfigFor(nameof(SongCore) + Path.DirectorySeparatorChar + nameof(SongCore)).Generated<PluginConfig>());
@@ -41,8 +36,6 @@ namespace SongCore
         [OnStart]
         public void OnApplicationStart()
         {
-            _harmony.PatchAll(_metadata.Assembly);
-
             BasicUI.GetIcons();
 
             if (!File.Exists(Collections.DataPath))

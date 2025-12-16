@@ -2,17 +2,19 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using IPA.Utilities;
 using ModestTree;
-using SiraUtil.Affinity;
+using MonoMod.RuntimeDetour;
 using SongCore.Utilities;
+using Zenject;
 
-namespace SongCore.Patches.BeatmapLevelCache
+namespace SongCore.Hooks.BeatmapLevelCache
 {
     /// <summary>
-    /// These patches implement a way to cache beatmap data when selecting levels for later use by the game or mods.
+    /// This implements a way to cache beatmap data when selecting levels for later use by the game or mods.
     /// The execution flow is as follows:
     /// <list>
     ///   <item><see cref="LevelCollectionTableView.didSelectLevelEvent"/> fires.</item>
@@ -29,25 +31,48 @@ namespace SongCore.Patches.BeatmapLevelCache
     /// </list>
     /// Ultimately, it ensures the cache is ready and prevents race conditions.
     /// </summary>
-    internal class BeatmapDataCachePatches : IAffinity
+    internal class BeatmapDataCacheHooks : IInitializable, IDisposable
     {
         private readonly CustomLevelLoader _customLevelLoader;
         private readonly BeatmapLevelsModel _beatmapLevelsModel;
         private readonly BeatmapLevelsEntitlementModel _beatmapLevelsEntitlementModel;
         private readonly BeatmapDataLoader _beatmapDataLoader;
         private readonly BeatmapLevelCache _beatmapLevelCache;
-        private readonly EventProxyPatches _eventProxyPatches;
+        private readonly EventProxyHooks _eventProxyHooks;
 
+        private Hook _readAllTextFromPathAsyncHook = null!;
+        private Hook _replaceDidSelectLevelEventHook = null!;
+        private Hook _replaceDidChangeContentEventHook = null!;
+        private Hook _createbeatmapKeyHook = null!;
+        private Hook _loadBeatmapDataAsyncHook = null!;
         private CancellationToken _cancellationToken;
 
-        private BeatmapDataCachePatches(CustomLevelLoader customLevelLoader, BeatmapLevelsModel beatmapLevelsModel, BeatmapLevelsEntitlementModel beatmapLevelsEntitlementModel, BeatmapDataLoader beatmapDataLoader, BeatmapLevelCache beatmapLevelCache, EventProxyPatches eventProxyPatches)
+        private BeatmapDataCacheHooks(CustomLevelLoader customLevelLoader, BeatmapLevelsModel beatmapLevelsModel, BeatmapLevelsEntitlementModel beatmapLevelsEntitlementModel, BeatmapDataLoader beatmapDataLoader, BeatmapLevelCache beatmapLevelCache, EventProxyHooks eventProxyHooks)
         {
             _customLevelLoader = customLevelLoader;
             _beatmapLevelsModel = beatmapLevelsModel;
             _beatmapLevelsEntitlementModel = beatmapLevelsEntitlementModel;
             _beatmapDataLoader = beatmapDataLoader;
             _beatmapLevelCache = beatmapLevelCache;
-            _eventProxyPatches = eventProxyPatches;
+            _eventProxyHooks = eventProxyHooks;
+        }
+
+        public void Initialize()
+        {
+            _readAllTextFromPathAsyncHook = new Hook(typeof(BeatmapLevelDataUtils).GetMethod(nameof(BeatmapLevelDataUtils.ReadAllTextFromPathAsync))!, LogReadAllTextFromPathAsync, true);
+            _replaceDidSelectLevelEventHook = new Hook(typeof(LevelCollectionViewController).GetMethod(nameof(LevelCollectionViewController.DidActivate), BindingFlags.Instance | BindingFlags.NonPublic)!, ReplaceDidSelectLevelEvent, true);
+            _replaceDidChangeContentEventHook = new Hook(typeof(StandardLevelDetailViewController).GetMethod(nameof(StandardLevelDetailViewController.DidActivate), BindingFlags.Instance | BindingFlags.NonPublic)!, ReplaceDidChangeContentEvent, true);
+            _createbeatmapKeyHook = new Hook(typeof(StandardLevelDetailView).GetMethod(nameof(StandardLevelDetailView.CreateBeatmapKey), BindingFlags.Instance | BindingFlags.NonPublic)!, SetBeatmapLevelCacheBeatmapKey, true);
+            _loadBeatmapDataAsyncHook = new Hook(typeof(BeatmapDataLoader).GetMethod(nameof(BeatmapDataLoader.LoadBeatmapDataAsync))!, LoadBeatmapDataWithCacheAsync, true);
+        }
+
+        public void Dispose()
+        {
+            _readAllTextFromPathAsyncHook.Dispose();
+            _replaceDidSelectLevelEventHook.Dispose();
+            _replaceDidChangeContentEventHook.Dispose();
+            _createbeatmapKeyHook.Dispose();
+            _loadBeatmapDataAsyncHook.Dispose();
         }
 
         private async Task<IBeatmapLevelData?> InitializeBeatmapLevelCacheAsync(BeatmapLevel beatmapLevel, CancellationToken cancellationToken)
@@ -130,7 +155,7 @@ namespace SongCore.Patches.BeatmapLevelCache
             _beatmapLevelCache.Init(beatmapLevel, InitializeBeatmapLevelCacheAsync);
             _cancellationToken = _beatmapLevelCache.CancellationTokenSource!.Token;
 
-            await InvokeEventAsync(levelCollectionTableView, beatmapLevel, _eventProxyPatches.LevelCollectionTableViewDidSelectLevelDelegate!, _cancellationToken);
+            await InvokeEventAsync(levelCollectionTableView, beatmapLevel, _eventProxyHooks.LevelCollectionTableViewDidSelectLevelDelegate!, _cancellationToken);
         }
 
         private async void HandleDidSelectLevel(LevelCollectionViewController levelCollectionViewController, BeatmapLevel beatmapLevel)
@@ -139,7 +164,7 @@ namespace SongCore.Patches.BeatmapLevelCache
 
             Assert.That(beatmapLevel == _beatmapLevelCache.BeatmapLevel);
 
-            await InvokeEventAsync(levelCollectionViewController, beatmapLevel, _eventProxyPatches.LevelCollectionViewControllerDidSelectLevelDelegate!, _cancellationToken);
+            await InvokeEventAsync(levelCollectionViewController, beatmapLevel, _eventProxyHooks.LevelCollectionViewControllerDidSelectLevelDelegate!, _cancellationToken);
         }
 
         private async void HandleDidChangeContent(StandardLevelDetailViewController? standardLevelDetailViewController, StandardLevelDetailViewController.ContentType contentType)
@@ -151,46 +176,54 @@ namespace SongCore.Patches.BeatmapLevelCache
                 Assert.That(standardLevelDetailViewController.beatmapLevel == _beatmapLevelCache.BeatmapLevel);
             }
 
-            await InvokeEventAsync(standardLevelDetailViewController, contentType, _eventProxyPatches.StandardLevelDetailViewControllerDidChangeContentDelegate!, _cancellationToken);
+            await InvokeEventAsync(standardLevelDetailViewController, contentType, _eventProxyHooks.StandardLevelDetailViewControllerDidChangeContentDelegate!, _cancellationToken);
         }
 
-        [AffinityPatch(typeof(BeatmapLevelDataUtils), nameof(BeatmapLevelDataUtils.ReadAllTextFromPathAsync))]
-        private void LogReadAllTextFromPathAsync(string path)
+        private Task<string?> LogReadAllTextFromPathAsync(Func<string, CancellationToken, Task<string?>> original, string path, CancellationToken cancellationToken)
         {
             Plugin.Log.Debug($"ReadAllTextFromPathAsync {_beatmapLevelCache.BeatmapKey.ToString()} {path}");
+            return original(path, cancellationToken);
         }
 
-        [AffinityPatch(typeof(LevelCollectionViewController), nameof(LevelCollectionViewController.DidActivate))]
-        [AffinityPrefix]
-        private void ReplaceDidSelectLevelEvent(LevelCollectionViewController __instance, bool firstActivation)
+        private void ReplaceDidSelectLevelEvent(Action<LevelCollectionViewController, bool, bool, bool> original, LevelCollectionViewController instance, bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
         {
             if (!firstActivation)
             {
+                original(instance, firstActivation, addedToHierarchy, screenSystemEnabling);
                 return;
             }
 
-            ref var didSelectLevelViewControllerEvent = ref Accessors.ViewControllerDidSelectLevelEventAccessor(ref __instance);
+            ref var didSelectLevelViewControllerEvent = ref Accessors.ViewControllerDidSelectLevelEventAccessor(ref instance);
             didSelectLevelViewControllerEvent = HandleDidSelectLevel;
 
-            ref var didSelectLevelViewEvent = ref Accessors.TableViewDidSelectLevelEventAccessor(ref __instance._levelCollectionTableView);
+            ref var didSelectLevelViewEvent = ref Accessors.TableViewDidSelectLevelEventAccessor(ref instance._levelCollectionTableView);
             didSelectLevelViewEvent = HandleDidSelectLevel;
+
+            original(instance, firstActivation, addedToHierarchy, screenSystemEnabling);
         }
 
-        [AffinityPatch(typeof(StandardLevelDetailViewController), nameof(StandardLevelDetailViewController.DidActivate))]
-        [AffinityPrefix]
-        private void ReplaceDidChangeContentEvent(StandardLevelDetailViewController __instance, bool firstActivation)
+        private void ReplaceDidChangeContentEvent(Action<StandardLevelDetailViewController, bool, bool, bool> original, StandardLevelDetailViewController instance, bool firstActivation, bool addedToHierarchy, bool screenSystemEnabling)
         {
             if (!firstActivation)
             {
+                original(instance, firstActivation, addedToHierarchy, screenSystemEnabling);
                 return;
             }
 
-            ref var didChangeContentEvent = ref Accessors.DidChangeContentEventAccessor(ref __instance);
+            ref var didChangeContentEvent = ref Accessors.DidChangeContentEventAccessor(ref instance);
             didChangeContentEvent = HandleDidChangeContent;
+
+            original(instance, firstActivation, addedToHierarchy, screenSystemEnabling);
         }
 
-        [AffinityPatch(typeof(StandardLevelDetailView), nameof(StandardLevelDetailView.CreateBeatmapKey))]
-        private async void SetBeatmapLevelCacheBeatmapKeyAsync(BeatmapKey __result)
+        private BeatmapKey SetBeatmapLevelCacheBeatmapKey(Func<StandardLevelDetailView, BeatmapKey> original, StandardLevelDetailView instance)
+        {
+            var result = original(instance);
+            SetBeatmapLevelCacheBeatmapKeyAsync(result);
+            return result;
+        }
+
+        private async void SetBeatmapLevelCacheBeatmapKeyAsync(BeatmapKey beatmapKey)
         {
             Plugin.Log.Debug("Attempting to set beatmap level cache beatmap key");
 
@@ -206,44 +239,39 @@ namespace SongCore.Patches.BeatmapLevelCache
 
             Assert.That(beatmapLevelData == _beatmapLevelCache.BeatmapLevelData);
 
-            if (!_beatmapLevelCache.DifficultyMatches(__result))
+            if (!_beatmapLevelCache.DifficultyMatches(beatmapKey))
             {
-                Plugin.Log.Debug($"Setting beatmap level cache beatmap key to {__result}");
+                Plugin.Log.Debug($"Setting beatmap level cache beatmap key to {beatmapKey}");
 
                 _beatmapLevelCache.InvalidateDifficulty();
-                _beatmapLevelCache.BeatmapKey = __result;
+                _beatmapLevelCache.BeatmapKey = beatmapKey;
             }
 
             tcs.TrySetResult(true);
         }
 
-        [AffinityPatch(typeof(BeatmapDataLoader), nameof(BeatmapDataLoader.LoadBeatmapDataAsync))]
-        [AffinityPrefix]
-        private bool LoadBeatmapDataWithCacheAsync(ref Task<IReadonlyBeatmapData?> __result, IBeatmapLevelData beatmapLevelData, BeatmapKey beatmapKey, float startBpm, bool loadingForDesignatedEnvironment, IEnvironmentInfo? targetEnvironmentInfo, IEnvironmentInfo? originalEnvironmentInfo, BeatmapLevelDataVersion beatmapLevelDataVersion, GameplayModifiers? gameplayModifiers, PlayerSpecificSettings? playerSpecificSettings, bool enableBeatmapDataCaching)
+        private Task<IReadonlyBeatmapData?> LoadBeatmapDataWithCacheAsync(Func<BeatmapDataLoader, IBeatmapLevelData, BeatmapKey, float, bool, IEnvironmentInfo?, IEnvironmentInfo?, BeatmapLevelDataVersion, GameplayModifiers?, PlayerSpecificSettings?, bool, Task<IReadonlyBeatmapData?>> original, BeatmapDataLoader instance, IBeatmapLevelData beatmapLevelData, BeatmapKey beatmapKey, float startBpm, bool loadingForDesignatedEnvironment, IEnvironmentInfo? targetEnvironmentInfo, IEnvironmentInfo? originalEnvironmentInfo, BeatmapLevelDataVersion beatmapLevelDataVersion, GameplayModifiers? gameplayModifiers, PlayerSpecificSettings? playerSpecificSettings, bool enableBeatmapDataCaching)
         {
-            Assert.That(UnityGame.OnMainThread);
+            Assert.That(UnityGame.OnMainThread, "This method must be called on the main thread.");
 
             var request = new BeatmapDataRequest(beatmapLevelData, beatmapKey, startBpm, loadingForDesignatedEnvironment, targetEnvironmentInfo, originalEnvironmentInfo, beatmapLevelDataVersion, gameplayModifiers, playerSpecificSettings, enableBeatmapDataCaching);
 
             if (!_beatmapLevelCache.LevelMatches(beatmapLevelData))
             {
                 Plugin.Log.Debug("Level data changed, returning original method");
-                return true;
+                return original(instance, beatmapLevelData, beatmapKey, startBpm, loadingForDesignatedEnvironment, targetEnvironmentInfo, originalEnvironmentInfo, beatmapLevelDataVersion, gameplayModifiers, playerSpecificSettings, enableBeatmapDataCaching);
             }
 
             if (_beatmapLevelCache.BeatmapDataRequest?.Equals(request) == true)
             {
                 Plugin.Log.Debug("Returning stored beatmap data task");
-                __result = _beatmapLevelCache.BeatmapDataLoadingTask!;
-                return false;
+                return _beatmapLevelCache.BeatmapDataLoadingTask!;
             }
 
             Plugin.Log.Debug("Starting new beatmap data request");
 
             _beatmapLevelCache.BeatmapDataRequest = request;
-            __result = _beatmapLevelCache.BeatmapDataLoadingTask = request.Start(_beatmapDataLoader);
-
-            return false;
+            return _beatmapLevelCache.BeatmapDataLoadingTask = request.Start(original, _beatmapDataLoader);
         }
     }
 }

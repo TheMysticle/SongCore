@@ -1,4 +1,4 @@
-namespace SongCore.Patches.BeatmapLevelCache
+namespace SongCore.Hooks.BeatmapLevelCache
 {
     internal enum BeatmapDataType
     {

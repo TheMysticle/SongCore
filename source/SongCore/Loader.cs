@@ -18,8 +18,8 @@ using IPA.Utilities;
 using IPA.Utilities.Async;
 using Newtonsoft.Json;
 using SongCore.Data;
+using SongCore.Hooks.BeatmapLevelCache;
 using SongCore.OverrideClasses;
-using SongCore.Patches.BeatmapLevelCache;
 using SongCore.UI;
 using SongCore.Utilities;
 using UnityEngine;
@@ -906,14 +906,14 @@ namespace SongCore
 
             if (!string.IsNullOrEmpty(loadedSaveData.beatmapLevelSaveData?.audio.audioDataFilename))
             {
-                IOBlacklistPatch.FilesBlacklist.TryAdd(Path.GetFullPath(Path.Combine(loadedSaveData.customLevelFolderInfo.folderPath, loadedSaveData.beatmapLevelSaveData!.audio.audioDataFilename)), reason);
+                IOBlacklistHooks.FilesBlacklist.TryAdd(Path.GetFullPath(Path.Combine(loadedSaveData.customLevelFolderInfo.folderPath, loadedSaveData.beatmapLevelSaveData!.audio.audioDataFilename)), reason);
             }
 
             foreach (var difficultyBeatmap in loadedSaveData.standardLevelInfoSaveData?.difficultyBeatmapSets.SelectMany(x => x.difficultyBeatmaps) ?? Enumerable.Empty<StandardLevelInfoSaveData.DifficultyBeatmap>())
             {
                 if (!string.IsNullOrEmpty(difficultyBeatmap.beatmapFilename))
                 {
-                    IOBlacklistPatch.FilesBlacklist.TryAdd(Path.GetFullPath(Path.Combine(loadedSaveData.customLevelFolderInfo.folderPath, difficultyBeatmap.beatmapFilename)), reason);
+                    IOBlacklistHooks.FilesBlacklist.TryAdd(Path.GetFullPath(Path.Combine(loadedSaveData.customLevelFolderInfo.folderPath, difficultyBeatmap.beatmapFilename)), reason);
                 }
             }
 
@@ -921,12 +921,12 @@ namespace SongCore
             {
                 if (!string.IsNullOrEmpty(difficultyBeatmap.beatmapDataFilename))
                 {
-                    IOBlacklistPatch.FilesBlacklist.TryAdd(Path.GetFullPath(Path.Combine(loadedSaveData.customLevelFolderInfo.folderPath, difficultyBeatmap.beatmapDataFilename)), reason);
+                    IOBlacklistHooks.FilesBlacklist.TryAdd(Path.GetFullPath(Path.Combine(loadedSaveData.customLevelFolderInfo.folderPath, difficultyBeatmap.beatmapDataFilename)), reason);
                 }
 
                 if (!string.IsNullOrEmpty(difficultyBeatmap.lightshowDataFilename))
                 {
-                    IOBlacklistPatch.FilesBlacklist.TryAdd(Path.GetFullPath(Path.Combine(loadedSaveData.customLevelFolderInfo.folderPath, difficultyBeatmap.lightshowDataFilename)), reason);
+                    IOBlacklistHooks.FilesBlacklist.TryAdd(Path.GetFullPath(Path.Combine(loadedSaveData.customLevelFolderInfo.folderPath, difficultyBeatmap.lightshowDataFilename)), reason);
                 }
             }
         }
@@ -1095,12 +1095,12 @@ namespace SongCore
 
             try
             {
-                IOBlacklistPatch.AllowIO.Value = true;
+                IOBlacklistHooks.AllowIO.Value = true;
                 json = File.ReadAllText(infoFilePath);
             }
             finally
             {
-                IOBlacklistPatch.AllowIO.Value = false;
+                IOBlacklistHooks.AllowIO.Value = false;
             }
 
             var version = BeatmapSaveDataHelpers.GetVersion(json);
@@ -1208,7 +1208,7 @@ namespace SongCore
                 {
                     try
                     {
-                        IOBlacklistPatch.AllowIO.Value = true;
+                        IOBlacklistHooks.AllowIO.Value = true;
                         if (loadedSaveData.standardLevelInfoSaveData != null)
                         {
                             length = GetLengthFromOgg(Path.Combine(loadedSaveData.customLevelFolderInfo.folderPath, loadedSaveData.standardLevelInfoSaveData.songFilename));
@@ -1224,7 +1224,7 @@ namespace SongCore
                     }
                     finally
                     {
-                        IOBlacklistPatch.AllowIO.Value = false;
+                        IOBlacklistHooks.AllowIO.Value = false;
                     }
 
                     if (length <= 1)
@@ -1274,6 +1274,7 @@ namespace SongCore
         public static float GetLengthFromMap(CustomLevelLoader.LoadedSaveData loadedSaveData, IBeatmapLevelData beatmapLevelData, BeatmapLevel level)
         {
             float length = 0;
+            var fileSystemBeatmapLevelData = (FileSystemBeatmapLevelData)beatmapLevelData;
 
             if (loadedSaveData.standardLevelInfoSaveData != null)
             {
@@ -1282,12 +1283,12 @@ namespace SongCore
 
                 try
                 {
-                    IOBlacklistPatch.AllowIO.Value = true;
-                    json = ReversePatches.FileSystemBeatmapLevelData.GetBeatmapString((FileSystemBeatmapLevelData)beatmapLevelData, beatmapKey);
+                    IOBlacklistHooks.AllowIO.Value = true;
+                    json = OriginalMethods.FileSystemBeatmapLevelData.GetBeatmapString(fileSystemBeatmapLevelData, beatmapKey);
                 }
                 finally
                 {
-                    IOBlacklistPatch.AllowIO.Value = false;
+                    IOBlacklistHooks.AllowIO.Value = false;
                 }
 
                 var beatmapSaveData = JsonUtility.FromJson<BeatmapSaveDataVersion3.BeatmapSaveData>(json);
@@ -1314,14 +1315,14 @@ namespace SongCore
 
                 try
                 {
-                    IOBlacklistPatch.AllowIO.Value = true;
-                    beatmapJson = beatmapLevelData.GetBeatmapString(beatmapKey);
-                    lightShowJson = beatmapLevelData.GetLightshowString(beatmapKey);
-                    audioJson = beatmapLevelData.GetAudioDataString();
+                    IOBlacklistHooks.AllowIO.Value = true;
+                    audioJson = OriginalMethods.FileSystemBeatmapLevelData.GetAudioDataString(fileSystemBeatmapLevelData);
+                    beatmapJson = OriginalMethods.FileSystemBeatmapLevelData.GetBeatmapString(fileSystemBeatmapLevelData, beatmapKey);
+                    lightShowJson = OriginalMethods.FileSystemBeatmapLevelData.GetLightshowString(fileSystemBeatmapLevelData, beatmapKey);
                 }
                 finally
                 {
-                    IOBlacklistPatch.AllowIO.Value = false;
+                    IOBlacklistHooks.AllowIO.Value = false;
                 }
 
                 var beatmapSaveData = JsonUtility.FromJson<BeatmapSaveData>(beatmapJson);

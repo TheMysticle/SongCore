@@ -36,7 +36,6 @@
   </ItemDefinitionGroup>
 
   <ItemGroup>
-    <Reference Include="0Harmony" HintPath="$(BeatSaberDir)\Libs\0Harmony.dll" />
     <Reference Include="AdditionalContentModel.Interfaces" />
     <Reference Include="BeatmapCore" />
     <Reference Include="BeatSaber.Destinations" />
@@ -56,6 +55,9 @@
     <Reference Include="Main" Publicize="true" />
     <Reference Include="MediaLoader" />
     <Reference Include="Menu.ColorSettings" />
+    <Reference Include="Mono.Cecil" HintPath="$(BeatSaberDir)\Libs\Mono.Cecil.dll" />
+    <Reference Include="MonoMod.RuntimeDetour" HintPath="$(BeatSaberDir)\Libs\MonoMod.RuntimeDetour.dll" />
+    <Reference Include="MonoMod.Utils" HintPath="$(BeatSaberDir)\Libs\MonoMod.Utils.dll" />
     <Reference Include="netstandard" />
     <Reference Include="Newtonsoft.Json" />
     <Reference Include="SegmentedControl" Publicize="true" />
@@ -70,6 +72,7 @@
     <Reference Include="UnityEngine.JSONSerializeModule" />
     <Reference Include="UnityEngine.UI" />
     <Reference Include="UnityEngine.UIModule" />
+    <Reference Include="UnityEngine.UnityWebRequestModule" />
     <Reference Include="Zenject" Publicize="true" />
     <Reference Include="Zenject-usage" />
   </ItemGroup>

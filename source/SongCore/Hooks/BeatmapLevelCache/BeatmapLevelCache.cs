@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using IPA.Utilities;
 using ModestTree;
 
-namespace SongCore.Patches.BeatmapLevelCache
+namespace SongCore.Hooks.BeatmapLevelCache
 {
     internal class BeatmapLevelCache
     {
@@ -90,7 +90,7 @@ namespace SongCore.Patches.BeatmapLevelCache
 
             try
             {
-                IOBlacklistPatch.AllowIO.Value = true;
+                IOBlacklistHooks.AllowIO.Value = true;
                 data = original();
                 CacheJsonData(beatmapDataType, data);
 
@@ -98,7 +98,7 @@ namespace SongCore.Patches.BeatmapLevelCache
             }
             finally
             {
-                IOBlacklistPatch.AllowIO.Value = false;
+                IOBlacklistHooks.AllowIO.Value = false;
             }
         }
 
@@ -122,7 +122,7 @@ namespace SongCore.Patches.BeatmapLevelCache
 
             try
             {
-                IOBlacklistPatch.AllowIO.Value = true;
+                IOBlacklistHooks.AllowIO.Value = true;
                 originalTask = original();
                 _jsonTasks[idx] = originalTask;
                 data = await originalTask;
@@ -136,7 +136,7 @@ namespace SongCore.Patches.BeatmapLevelCache
             }
             finally
             {
-                IOBlacklistPatch.AllowIO.Value = false;
+                IOBlacklistHooks.AllowIO.Value = false;
 
                 if (originalTask != null && originalTask == _jsonTasks[idx])
                 {
@@ -147,7 +147,7 @@ namespace SongCore.Patches.BeatmapLevelCache
 
         private bool TryGetCachedJsonData(IBeatmapLevelData beatmapLevelData, BeatmapKey beatmapKey, BeatmapDataType beatmapDataType, out string? value)
         {
-            Assert.That(UnityGame.OnMainThread);
+            Assert.That(UnityGame.OnMainThread, "This method must be called on the main thread.");
 
             if (LevelMatches(beatmapLevelData) && (beatmapDataType == BeatmapDataType.Audio || DifficultyMatches(beatmapKey)))
             {

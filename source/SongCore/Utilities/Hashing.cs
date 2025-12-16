@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using BeatmapLevelSaveDataVersion4;
 using Newtonsoft.Json;
-using SongCore.Patches.BeatmapLevelCache;
+using SongCore.Hooks.BeatmapLevelCache;
 
 namespace SongCore.Utilities
 {
@@ -221,7 +221,7 @@ namespace SongCore.Utilities
 
             try
             {
-                IOBlacklistPatch.AllowIO.Value = true;
+                IOBlacklistHooks.AllowIO.Value = true;
                 var hash = CreateSha1FromFilesWithPrependBytes(prependBytes, files);
                 TryGetRelativePath(customLevelFolderInfo.folderPath, out var relativePath);
                 cachedSongHashData[relativePath] = new SongHashData(directoryHash, hash);
@@ -230,7 +230,7 @@ namespace SongCore.Utilities
             }
             finally
             {
-                IOBlacklistPatch.AllowIO.Value = false;
+                IOBlacklistHooks.AllowIO.Value = false;
             }
         }
 
@@ -251,7 +251,7 @@ namespace SongCore.Utilities
 
             try
             {
-                IOBlacklistPatch.AllowIO.Value = true;
+                IOBlacklistHooks.AllowIO.Value = true;
                 var hash = CreateSha1FromFilesWithPrependBytes(prependBytes, files);
                 TryGetRelativePath(customLevelFolderInfo.folderPath, out var relativePath);
                 cachedSongHashData[relativePath] = new SongHashData(directoryHash, hash);
@@ -260,7 +260,7 @@ namespace SongCore.Utilities
             }
             finally
             {
-                IOBlacklistPatch.AllowIO.Value = false;
+                IOBlacklistHooks.AllowIO.Value = false;
             }
         }
 
