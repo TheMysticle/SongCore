@@ -5,6 +5,8 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using HMUI;
+using Mono.Cecil.Cil;
+using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using SongCore.Data;
 using SongCore.UI;
@@ -32,8 +34,8 @@ namespace SongCore.Hooks
         private Hook _cosmeticCharacteristicHook = null!;
         private Hook _requirementsHook = null!;
         private Hook _buttonsStateHook = null!;
-        private Hook _overrideColorSchemeHook = null!;
-        private Hook _overrideMultiplayerColorSchemeHook = null!;
+        private ILHook _overrideColorSchemeHook = null!;
+        private ILHook _overrideMultiplayerColorSchemeHook = null!;
         private SongData? _songData;
 
         private SongDataMenuHooks(StandardLevelDetailViewController standardLevelDetailViewController, CustomLevelLoader customLevelLoader, RequirementsUI requirementsUI, PluginConfig config)
@@ -54,8 +56,8 @@ namespace SongCore.Hooks
             _cosmeticCharacteristicHook = new Hook(typeof(BeatmapCharacteristicSegmentedControlController).GetMethod(nameof(BeatmapCharacteristicSegmentedControlController.SetData))!, SetCosmeticCharacteristic, true);
             _requirementsHook = new Hook(typeof(StandardLevelDetailView).GetMethod(nameof(StandardLevelDetailView.RefreshContent))!, ProcessBeatmapRequirements, true);
             _buttonsStateHook = new Hook(typeof(StandardLevelDetailView).GetMethod(nameof(StandardLevelDetailView.CheckIfBeatmapLevelDataExists), BindingFlags.Instance | BindingFlags.NonPublic)!, SaveAndRestoreButtonsState, true);
-            _overrideColorSchemeHook = new Hook(typeof(StandardLevelScenesTransitionSetupDataSO).GetMethod($"set_{nameof(StandardLevelScenesTransitionSetupDataSO.colorScheme)}", BindingFlags.Instance | BindingFlags.NonPublic)!, SetSoloOverrideColorScheme, true);
-            _overrideMultiplayerColorSchemeHook = new Hook(typeof(MultiplayerLevelScenesTransitionSetupDataSO).GetMethod($"set_{nameof(MultiplayerLevelScenesTransitionSetupDataSO.colorScheme)}", BindingFlags.Instance | BindingFlags.NonPublic)!, SetMultiplayerOverrideColorScheme, true);
+            _overrideColorSchemeHook = new ILHook(typeof(StandardLevelScenesTransitionSetupDataSO).GetMethod(nameof(StandardLevelScenesTransitionSetupDataSO.Init), BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)!, OverrideColorSchemeManipulator, true);
+            _overrideMultiplayerColorSchemeHook = new ILHook(typeof(MultiplayerLevelScenesTransitionSetupDataSO).GetMethod(nameof(MultiplayerLevelScenesTransitionSetupDataSO.Init), BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)!, OverrideColorSchemeManipulator, true);
         }
 
         public void Dispose()
@@ -341,32 +343,34 @@ namespace SongCore.Hooks
             instance.practiceButton.interactable = practiceButtonInteractable;
         }
 
-        private void SetSoloOverrideColorScheme(Action<StandardLevelScenesTransitionSetupDataSO, ColorScheme> original, StandardLevelScenesTransitionSetupDataSO instance, ColorScheme value)
+        private void OverrideColorSchemeManipulator(ILContext context)
         {
-            var overrideColorScheme = GetOverrideColorScheme(value, instance.beatmapKey);
-
-            if (overrideColorScheme is null)
-            {
-                original(instance, value);
-                return;
-            }
-
-            instance.usingOverrideColorScheme = true;
-            original(instance, overrideColorScheme);
+            var cursor = new ILCursor(context);
+            cursor.GotoNext(MoveType.Before, i => i.MatchCall(out var method) && method.Name == "set_colorScheme");
+            cursor.Emit(OpCodes.Ldarg_0);
+            cursor.Emit(OpCodes.Ldarg_2);
+            cursor.EmitDelegate(SetOverrideColorScheme);
         }
 
-        private void SetMultiplayerOverrideColorScheme(Action<MultiplayerLevelScenesTransitionSetupDataSO, ColorScheme> original, MultiplayerLevelScenesTransitionSetupDataSO instance, ColorScheme value)
+        private ColorScheme SetOverrideColorScheme(ColorScheme colorScheme, LevelScenesTransitionSetupDataSO levelScenesTransitionSetupData, in BeatmapKey beatmapKey)
         {
-            var overrideColorScheme = GetOverrideColorScheme(value, instance.beatmapKey);
+            var overrideColorScheme = GetOverrideColorScheme(colorScheme, beatmapKey);
 
-            if (overrideColorScheme is null)
+            if (overrideColorScheme == null)
             {
-                original(instance, value);
-                return;
+                return colorScheme;
             }
 
-            instance.usingOverrideColorScheme = true;
-            original(instance, overrideColorScheme);
+            if (levelScenesTransitionSetupData is StandardLevelScenesTransitionSetupDataSO standardLevelScenesTransitionSetupData)
+            {
+                standardLevelScenesTransitionSetupData.usingOverrideColorScheme = true;
+            }
+            else if (levelScenesTransitionSetupData is MultiplayerLevelScenesTransitionSetupDataSO multiplayerLevelScenesTransitionSetupData)
+            {
+                multiplayerLevelScenesTransitionSetupData.usingOverrideColorScheme = true;
+            }
+
+            return overrideColorScheme;
         }
 
         private ColorScheme? GetOverrideColorScheme(ColorScheme currentColorScheme, BeatmapKey beatmapKey)
