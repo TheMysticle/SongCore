@@ -14,7 +14,6 @@ namespace SongCore.Installers
             Container.BindInterfacesAndSelfTo<ColorsUI>().AsSingle();
             Container.Bind<ProgressBar>().FromNewComponentOnNewGameObject().AsSingle();
             Container.BindInterfacesAndSelfTo<RequirementsUI>().AsSingle();
-            Container.BindInterfacesAndSelfTo<EventProxyHooks>().AsSingle();
             Container.Bind<BeatmapLevelCache>().AsSingle();
             Container.BindInterfacesTo<BeatmapVersionDetectionHook>().AsSingle();
             Container.BindInterfacesTo<BeatmapJsonCacheHooks>().AsSingle();
