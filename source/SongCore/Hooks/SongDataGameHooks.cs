@@ -31,7 +31,7 @@ namespace SongCore.Hooks
 
             if (difficultyData._showRotationNoteSpawnLines != null)
             {
-                _showRotationNoteSpawnLines = difficultyData._showRotationNoteSpawnLines.Value;
+                _showRotationNoteSpawnLines = (bool)difficultyData._showRotationNoteSpawnLines;
                 _rotationNoteSpawnLinesHook = new Hook(typeof(BeatLineManager).GetMethod(nameof(BeatLineManager.HandleNoteWasSpawned), BindingFlags.Instance | BindingFlags.NonPublic)!, ShowOrHideRotationNoteSpawnLines, true);
             }
 
@@ -48,9 +48,12 @@ namespace SongCore.Hooks
             _oneSaberHook?.Dispose();
         }
 
-        private bool ShowOrHideRotationNoteSpawnLines(Action<BeatLineManager> original, BeatLineManager instance, NoteController noteController)
+        private void ShowOrHideRotationNoteSpawnLines(Action<BeatLineManager, NoteController> original, BeatLineManager instance, NoteController noteController)
         {
-            return _showRotationNoteSpawnLines;
+            if (_showRotationNoteSpawnLines)
+            {
+                original(instance, noteController);
+            }
         }
 
         private void ForceOneSaber(Action<SaberManager> original, SaberManager instance)
