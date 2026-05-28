@@ -414,7 +414,7 @@ namespace SongCore
                     // Get Levels from CustomLevels and CustomWIPLevels folders
                     var songFolders = new DirectoryInfo(_customLevelsPath).EnumerateDirectories()
                         .Concat(new DirectoryInfo(_customWIPPath).EnumerateDirectories())
-                        .Where(d => d.Exists && !d.Attributes.HasFlag(FileAttributes.Hidden))
+                        .Where(d => d.Exists && !CustomLevelPathHelper.IsHiddenDirectory(d))
                         .Select(d => d.FullName)
                         .ToArray();
                     var songFoldersCount = songFolders.Length;
@@ -434,7 +434,7 @@ namespace SongCore
                                 .Select(p => new DirectoryInfo(p))
                                 .Where(d => d.Exists)
                                 .SelectMany(d => d.EnumerateDirectories()
-                                    .Where(d => d.Exists && !d.Attributes.HasFlag(FileAttributes.Hidden))
+                                    .Where(d => d.Exists && !CustomLevelPathHelper.IsHiddenDirectory(d))
                                     .Select(d => d.FullName)))
                             .ToHashSet();
 
