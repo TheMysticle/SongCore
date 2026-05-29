@@ -24,7 +24,7 @@ namespace SongCore.Hooks
 
         private string GetEscapedURL(Func<string, string> original, string filePath)
         {
-            return $"file:///{UnityWebRequest.EscapeURL(filePath)}";
+            return FileHelpers.PathIsUrl(filePath) ? filePath : $"file:///{UnityWebRequest.EscapeURL(filePath)}";
         }
     }
 }
