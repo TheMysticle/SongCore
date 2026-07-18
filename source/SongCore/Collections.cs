@@ -33,12 +33,6 @@ namespace SongCore
             return HashLevelDictionary.ContainsKey(hash);
         }
 
-        [Obsolete("Use GetCustomLevelHash instead.", true)]
-        public static string hashForLevelID(string levelID)
-        {
-            return GetCustomLevelHash(levelID);
-        }
-
         // TODO: Replace by better naming.
         public static List<string> levelIDsForHash(string hash)
         {
@@ -48,12 +42,6 @@ namespace SongCore
         public static string GetCustomLevelHash(string levelID)
         {
             return LevelHashDictionary.TryGetValue(levelID, out var hash) ? hash : string.Empty;
-        }
-
-        [Obsolete("Get the loaded save data from CustomLevelLoader._loadedBeatmapSaveData.", true)]
-        public static CustomLevelLoader.LoadedSaveData? GetLoadedSaveData(string levelID)
-        {
-            return Loader.CustomLevelLoader._loadedBeatmapSaveData.TryGetValue(levelID, out var loadedSaveData) ? loadedSaveData : null;
         }
 
         public static SongData? GetCustomLevelSongData(string levelID)
@@ -68,29 +56,6 @@ namespace SongCore
             {
                 extraSongData.PopulateFromLoadedSaveData(loadedSaveData);
             }
-        }
-
-        [Obsolete("Get the song data with GetCustomLevelSongData instead.", true)]
-        public static ExtraSongData? RetrieveExtraSongData(string hash)
-        {
-            return GetCustomLevelSongData(CustomLevelLoader.kCustomLevelPrefixId + hash)?.ToExtraSongData();
-        }
-
-        [Obsolete("Get the song difficulty data with GetCustomLevelSongDifficultyData instead.", true)]
-        public static ExtraSongData.DifficultyData? RetrieveDifficultyData(BeatmapLevel beatmapLevel, BeatmapKey beatmapKey)
-        {
-            ExtraSongData? songData = null;
-
-            if (!beatmapLevel.hasPrecalculatedData)
-            {
-                songData = RetrieveExtraSongData(GetCustomLevelHash(beatmapLevel.levelID));
-            }
-
-            var diffData = songData?._difficulties.FirstOrDefault(x =>
-                x._difficulty == beatmapKey.difficulty && (x._beatmapCharacteristicName == beatmapKey.beatmapCharacteristic.characteristicNameLocalizationKey ||
-                                                        x._beatmapCharacteristicName == beatmapKey.beatmapCharacteristic.serializedName));
-
-            return diffData;
         }
 
         public static SongData.DifficultyData? GetCustomLevelSongDifficultyData(BeatmapKey beatmapKey)
