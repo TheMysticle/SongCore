@@ -143,7 +143,7 @@ namespace SongCore
             defaultCoverImage = _levelPackDetailViewController._defaultCoverSprite;
             beatmapCharacteristicCollection = _beatmapCharacteristicCollection;
 
-            if (Hashing.cachedSongHashData.Count == 0)
+            if (Hashing.cachedSongHashData.IsEmpty)
             {
                 await Task.WhenAll(Hashing.LoadCachedSongHashesAsync(), Hashing.LoadCachedAudioDataAsync());
                 RefreshSongs();
@@ -214,11 +214,11 @@ namespace SongCore
 
             if (CachedWIPLevelsPack != null && CustomLevelsRepository != null)
             {
-                if (CachedWIPLevels.Count > 0)
+                if (!CachedWIPLevels.IsEmpty)
                 {
                     CustomLevelsRepository.AddLevelPack(CachedWIPLevelsPack);
                 }
-                else if (CachedWIPLevels.Count == 0)
+                else
                 {
                     CustomLevelsRepository.RemoveLevelPack(CachedWIPLevelsPack);
                 }
@@ -229,7 +229,7 @@ namespace SongCore
                 if (folderEntry.SongFolderEntry.Pack == FolderLevelPack.NewPack)
                 {
                     folderEntry.LevelPack.UpdateBeatmapLevels(folderEntry.Levels.Values.OrderBy(l => l.songName).ToArray());
-                    if (CustomLevelsRepository != null && (folderEntry.Levels.Count > 0 || folderEntry is ModSeparateSongFolder { AlwaysShow: true }))
+                    if (CustomLevelsRepository != null && (!folderEntry.Levels.IsEmpty || folderEntry is ModSeparateSongFolder { AlwaysShow: true }))
                     {
                         CustomLevelsRepository.AddLevelPack(folderEntry.LevelPack);
                     }
