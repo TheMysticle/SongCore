@@ -756,7 +756,6 @@ namespace SongCore
         {
             DeletingSong?.Invoke();
             DeleteSingleSong(folderPath, deleteFolder);
-            AsyncHelper.RunSync(() => Hashing.SaveCachedSongHashesAsync(new HashSet<string>((CustomLevels.Keys.Concat(CustomWIPLevels.Keys)))));
             RefreshLevelPacks();
         }
 
@@ -773,7 +772,6 @@ namespace SongCore
                 await Task.Run(() => DeleteSingleSong(folderPath, deleteFolder));
             }
 
-            await Hashing.SaveCachedSongHashesAsync(new HashSet<string>(CustomLevels.Keys.Concat(CustomWIPLevels.Keys)));
             RefreshLevelPacks();
         }
 
