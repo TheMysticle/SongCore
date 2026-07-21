@@ -72,7 +72,6 @@ namespace SongCore
         public static event Action<Loader, ConcurrentDictionary<string, BeatmapLevel>>? SongsLoadedEvent;
         public static event Action? OnLevelPacksRefreshed;
 
-        private static readonly ConcurrentDictionary<string, OfficialSongEntry> OfficialSongs = new ConcurrentDictionary<string, OfficialSongEntry>();
         private static readonly ConcurrentDictionary<string, BeatmapLevel> CustomLevelsById = new ConcurrentDictionary<string, BeatmapLevel>();
         // Temp collection to avoid concurrency issues with base game dictionary. Also used to store levels on internal restart.
         private static ConcurrentDictionary<string, CustomLevelLoader.LoadedSaveData> LoadedBeatmapSaveData = new ConcurrentDictionary<string, CustomLevelLoader.LoadedSaveData>();
@@ -313,34 +312,6 @@ namespace SongCore
 
             var job = async () =>
             {
-                #region AddOfficialBeatmaps
-
-                try
-                {
-                    void AddOfficialBeatmapLevelsRepository(BeatmapLevelsRepository levelsRepository)
-                    {
-                        foreach (var pack in levelsRepository.beatmapLevelPacks)
-                        {
-                            foreach (var level in pack.AllBeatmapLevels())
-                            {
-                                OfficialSongs[level.levelID] = new OfficialSongEntry { LevelsRepository = levelsRepository, LevelPack = pack, BeatmapLevel = level };
-                            }
-                        }
-                    }
-
-                    OfficialSongs.Clear();
-
-                    AddOfficialBeatmapLevelsRepository(_beatmapLevelsModel.ostAndExtrasBeatmapLevelsRepository);
-                    AddOfficialBeatmapLevelsRepository(_beatmapLevelsModel.dlcBeatmapLevelsRepository);
-                }
-                catch (Exception ex)
-                {
-                    Plugin.Log.Error($"Error populating official songs: {ex.Message}");
-                    Plugin.Log.Error(ex);
-                }
-
-                #endregion
-
                 #region AddCustomBeatmaps
 
                 try
@@ -1148,20 +1119,15 @@ namespace SongCore
                 return null;
             }
 
-            BeatmapLevel? level = null;
             if (levelId.StartsWith(CustomLevelLoader.kCustomLevelPrefixId, StringComparison.Ordinal))
             {
-                if (CustomLevelsById.TryGetValue(levelId, out var customLevel))
-                {
-                    level = customLevel;
-                }
-            }
-            else if (OfficialSongs.TryGetValue(levelId, out var song))
-            {
-                level = song.BeatmapLevel;
+                return CustomLevelsById.GetValueOrDefault(levelId);
             }
 
-            return level;
+            return BeatmapLevelsModelSO.ostAndExtrasBeatmapLevelsRepository.TryGetBeatmapLevelById(levelId, out var level) ||
+                   BeatmapLevelsModelSO.dlcBeatmapLevelsRepository.TryGetBeatmapLevelById(levelId, out level)
+                ? level
+                : null;
         }
 
         /// <summary>
@@ -1456,30 +1422,6 @@ namespace SongCore
             return length;
         }
 
-        /// <summary>
-        /// Attempts to get an official level by LevelId. Returns false if a matching level isn't found.
-        /// </summary>
-        /// <param name="levelId"></param>
-        /// <param name="song"></param>
-        /// <returns></returns>
-        public static bool TryGetOfficialLevelById(string levelId, out OfficialSongEntry song)
-        {
-            if (string.IsNullOrEmpty(levelId))
-            {
-                song = default(OfficialSongEntry);
-                return false;
-            }
-
-            return OfficialSongs.TryGetValue(levelId, out song);
-        }
-
         #endregion
-
-        public struct OfficialSongEntry
-        {
-            public BeatmapLevelsRepository LevelsRepository;
-            public BeatmapLevelPack LevelPack;
-            public BeatmapLevel BeatmapLevel;
-        }
     }
 }
