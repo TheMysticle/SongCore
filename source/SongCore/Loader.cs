@@ -72,7 +72,6 @@ namespace SongCore
         public static event Action<Loader, ConcurrentDictionary<string, BeatmapLevel>>? SongsLoadedEvent;
         public static event Action? OnLevelPacksRefreshed;
 
-        private static readonly ConcurrentDictionary<string, BeatmapLevel> CustomLevelsById = new ConcurrentDictionary<string, BeatmapLevel>();
         // Temp collection to avoid concurrency issues with base game dictionary. Also used to store levels on internal restart.
         private static ConcurrentDictionary<string, CustomLevelLoader.LoadedSaveData> LoadedBeatmapSaveData = new ConcurrentDictionary<string, CustomLevelLoader.LoadedSaveData>();
         public static ConcurrentDictionary<string, BeatmapLevel> CustomLevels = new ConcurrentDictionary<string, BeatmapLevel>();
@@ -469,7 +468,6 @@ namespace SongCore
                                 var (_, level) = customLevel.Value;
                                 if (!wip)
                                 {
-                                    CustomLevelsById[level.levelID] = level;
                                     CustomLevels[songPath] = level;
                                 }
                                 else
@@ -576,7 +574,6 @@ namespace SongCore
                                         {
                                             var (_, level) = customLevel.Value;
                                             entry.Levels[songPath] = level;
-                                            CustomLevelsById[level.levelID] = level;
                                             foundSongPaths.TryAdd(songPath, false);
                                         }
 
@@ -776,7 +773,6 @@ namespace SongCore
                         }
                     }
 
-                    CustomLevelsById.TryRemove(level.levelID, out _);
                     _customLevelLoader._loadedBeatmapSaveData.Remove(level.levelID);
                 }
 
@@ -1119,15 +1115,7 @@ namespace SongCore
                 return null;
             }
 
-            if (levelId.StartsWith(CustomLevelLoader.kCustomLevelPrefixId, StringComparison.Ordinal))
-            {
-                return CustomLevelsById.GetValueOrDefault(levelId);
-            }
-
-            return BeatmapLevelsModelSO.ostAndExtrasBeatmapLevelsRepository.TryGetBeatmapLevelById(levelId, out var level) ||
-                   BeatmapLevelsModelSO.dlcBeatmapLevelsRepository.TryGetBeatmapLevelById(levelId, out level)
-                ? level
-                : null;
+            return BeatmapLevelsModelSO.GetBeatmapLevel(levelId);
         }
 
         /// <summary>
@@ -1142,8 +1130,7 @@ namespace SongCore
                 return null;
             }
 
-            CustomLevelsById.TryGetValue(CustomLevelLoader.kCustomLevelPrefixId + hash.ToUpperInvariant(), out var level);
-            return level;
+            return BeatmapLevelsModelSO.GetBeatmapLevel(CustomLevelLoader.kCustomLevelPrefixId + hash, true);
         }
 
         private void GetSongDuration(CustomLevelLoader.LoadedSaveData loadedSaveData, BeatmapLevel beatmapLevel)
