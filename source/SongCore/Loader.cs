@@ -71,7 +71,6 @@ namespace SongCore
         public static event Action<Loader>? LoadingStartedEvent;
         public static event Action<Loader, ConcurrentDictionary<string, BeatmapLevel>>? SongsLoadedEvent;
         public static event Action? OnLevelPacksRefreshed;
-        public static event Action? DeletingSong;
 
         private static readonly ConcurrentDictionary<string, OfficialSongEntry> OfficialSongs = new ConcurrentDictionary<string, OfficialSongEntry>();
         private static readonly ConcurrentDictionary<string, BeatmapLevel> CustomLevelsById = new ConcurrentDictionary<string, BeatmapLevel>();
@@ -754,7 +753,6 @@ namespace SongCore
         /// <param name="deleteFolder">Option to delete the base folder of the beatmap</param>
         public void DeleteSong(string folderPath, bool deleteFolder = true)
         {
-            DeletingSong?.Invoke();
             DeleteSingleSong(folderPath, deleteFolder);
             RefreshLevelPacks();
         }
@@ -766,7 +764,6 @@ namespace SongCore
         /// <param name="deleteFolder">Option to delete the base folder of the beatmap</param>
         public async Task DeleteSongsAsync(List<string> folderPaths, bool deleteFolder = true)
         {
-            DeletingSong?.Invoke();
             foreach (var folderPath in folderPaths)
             {
                 await Task.Run(() => DeleteSingleSong(folderPath, deleteFolder));
