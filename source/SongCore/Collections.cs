@@ -1,7 +1,3 @@
-using Newtonsoft.Json;
-using SongCore.Data;
-using SongCore.Utilities;
-using IPA.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -9,6 +5,9 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using BGLib.JsonExtension;
+using IPA.Utilities;
+using SongCore.Data;
 using UnityEngine;
 
 namespace SongCore
@@ -75,36 +74,36 @@ namespace SongCore
             return diffData;
         }
 
-        internal static void LoadCustomLevelSongData()
+        internal static async Task LoadCachedSongDataAsync()
         {
-            Task.Run(() =>
+            if (!File.Exists(DataPath))
             {
-                try
-                {
-                    using var reader = new JsonTextReader(new StreamReader(DataPath));
-                    var serializer = JsonSerializer.CreateDefault();
-                    var songData = serializer.Deserialize<ConcurrentDictionary<string, SongData>?>(reader);
-                    if (songData != null)
-                    {
-                        CustomSongsData = songData;
-                        Plugin.Log.Info($"Finished loading cached song data for {CustomSongsData.Count} songs.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Plugin.Log.Error($"Error loading cached song data: {ex.Message}");
-                    Plugin.Log.Error(ex);
-                }
-            });
-        }
+                return;
+            }
 
-        internal static async Task SaveCustomLevelSongDataAsync()
-        {
             try
             {
-                Plugin.Log.Info($"Saving cached song data for {CustomSongsData.Count} songs.");
-                await using var writer = new StreamWriter(DataPath);
-                await writer.WriteAsync(JsonConvert.SerializeObject(CustomSongsData, Formatting.None));
+                var songData = await Task.Run(() => JsonFileHandler.ReadFromFile<ConcurrentDictionary<string, SongData>>(DataPath));
+                if (songData != null)
+                {
+                    CustomSongsData = songData;
+                    Plugin.Log.Info($"Finished loading cached song data for {CustomSongsData.Count} songs.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.Error($"Error loading cached song data: {ex.Message}");
+                Plugin.Log.Error(ex);
+            }
+        }
+
+        internal static async Task SaveCachedSongDataAsync()
+        {
+            Plugin.Log.Info($"Saving cached song data for {CustomSongsData.Count} songs.");
+
+            try
+            {
+                await Task.Run(() => JsonFileHandler.WriteCompactWithoutDefault(CustomSongsData, DataPath));
             }
             catch (Exception ex)
             {

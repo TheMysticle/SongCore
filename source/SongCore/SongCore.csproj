@@ -41,6 +41,7 @@
     <Reference Include="BeatSaber.Destinations" />
     <Reference Include="BeatSaber.ViewSystem" />
     <Reference Include="BGLib.AppFlow" />
+    <Reference Include="BGLib.DotnetExtension" />
     <Reference Include="BGLib.JsonExtension" />
     <Reference Include="BGLib.Polyglot" />
     <Reference Include="BGLib.UnityExtension" />

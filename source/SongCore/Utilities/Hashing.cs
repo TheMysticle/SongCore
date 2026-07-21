@@ -1,4 +1,3 @@
-using SongCore.Data;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,8 +5,10 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using BeatmapLevelSaveDataVersion4;
-using Newtonsoft.Json;
+using BGLib.JsonExtension;
+using SongCore.Data;
 using SongCore.Hooks.BeatmapLevelCache;
 
 namespace SongCore.Utilities
@@ -19,37 +20,30 @@ namespace SongCore.Utilities
         public static readonly string cachedHashDataPath = Path.Combine(IPA.Utilities.UnityGame.UserDataPath, nameof(SongCore), "SongHashData.dat");
         public static readonly string cachedAudioDataPath = Path.Combine(IPA.Utilities.UnityGame.UserDataPath, nameof(SongCore), "SongDurationCache.dat");
 
-        public static void ReadCachedSongHashes()
+        internal static async Task LoadCachedSongHashesAsync()
         {
-            if (File.Exists(cachedHashDataPath))
+            if (!File.Exists(cachedHashDataPath))
             {
-                try
+                return;
+            }
+
+            try
+            {
+                var songHashData = await Task.Run(() => JsonFileHandler.ReadFromFile<ConcurrentDictionary<string, SongHashData>>(cachedHashDataPath));
+                if (songHashData != null)
                 {
-                    var songHashData = JsonConvert.DeserializeObject<ConcurrentDictionary<string, SongHashData>>(File.ReadAllText(cachedHashDataPath));
-                    if (songHashData != null)
-                    {
-                        cachedSongHashData = songHashData;
-                        Plugin.Log.Info($"Finished loading cached hashes for {cachedSongHashData.Count} songs.");
-                    }
+                    cachedSongHashData = songHashData;
+                    Plugin.Log.Info($"Finished loading cached hashes for {cachedSongHashData.Count} songs.");
                 }
-                catch (Exception ex)
-                {
-                    Plugin.Log.Error($"Error loading cached song hashes: {ex.Message}");
-                    Plugin.Log.Error(ex);
-                }
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.Error($"Error loading cached song hashes: {ex.Message}");
+                Plugin.Log.Error(ex);
             }
         }
 
-        public static void UpdateCachedHashes(HashSet<string> currentSongPaths)
-        {
-            UpdateCachedHashesInternal(currentSongPaths);
-        }
-
-        /// <summary>
-        /// Intended for use in the Loader
-        /// </summary>
-        /// <param name="currentSongPaths"></param>
-        internal static void UpdateCachedHashesInternal(ICollection<string> currentSongPaths)
+        internal static async Task SaveCachedSongHashesAsync(ICollection<string> currentSongPaths)
         {
             foreach (var levelPath in cachedSongHashData.Keys)
             {
@@ -60,10 +54,11 @@ namespace SongCore.Utilities
                 }
             }
 
+            Plugin.Log.Info($"Saving cached hashes for {cachedSongHashData.Count} songs.");
+
             try
             {
-                Plugin.Log.Info($"Saving cached hashes for {cachedSongHashData.Count} songs.");
-                File.WriteAllText(cachedHashDataPath, JsonConvert.SerializeObject(cachedSongHashData));
+                await Task.Run(() => JsonFileHandler.WriteCompactWithoutDefault(cachedSongHashData, cachedHashDataPath));
             }
             catch (Exception ex)
             {
@@ -72,37 +67,30 @@ namespace SongCore.Utilities
             }
         }
 
-        public static void ReadCachedAudioData()
+        internal static async Task LoadCachedAudioDataAsync()
         {
-            if (File.Exists(cachedAudioDataPath))
+            if (!File.Exists(cachedAudioDataPath))
             {
-                try
+                return;
+            }
+
+            try
+            {
+                var audioData = await Task.Run(() => JsonFileHandler.ReadFromFile<ConcurrentDictionary<string, AudioCacheData>>(cachedAudioDataPath));
+                if (audioData != null)
                 {
-                    var audioData = JsonConvert.DeserializeObject<ConcurrentDictionary<string, AudioCacheData>>(File.ReadAllText(cachedAudioDataPath));
-                    if (audioData != null)
-                    {
-                        cachedAudioData = audioData;
-                        Plugin.Log.Info($"Finished loading cached durations for {cachedAudioData.Count} songs.");
-                    }
+                    cachedAudioData = audioData;
+                    Plugin.Log.Info($"Finished loading cached durations for {cachedAudioData.Count} songs.");
                 }
-                catch (Exception ex)
-                {
-                    Plugin.Log.Error($"Error loading cached song durations: {ex.Message}");
-                    Plugin.Log.Error(ex);
-                }
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.Error($"Error loading cached song durations: {ex.Message}");
+                Plugin.Log.Error(ex);
             }
         }
 
-        public static void UpdateCachedAudioData(HashSet<string> currentSongPaths)
-        {
-            UpdateCachedAudioDataInternal(currentSongPaths);
-        }
-
-        /// <summary>
-        /// Intended for use in the Loader
-        /// </summary>
-        /// <param name="currentSongPaths"></param>
-        internal static void UpdateCachedAudioDataInternal(ICollection<string> currentSongPaths)
+        internal static async Task SaveCachedAudioDataAsync(ICollection<string> currentSongPaths)
         {
             foreach (var levelPath in cachedAudioData.Keys)
             {
@@ -113,10 +101,11 @@ namespace SongCore.Utilities
                 }
             }
 
+            Plugin.Log.Info($"Saving cached durations for {cachedAudioData.Count} songs.");
+
             try
             {
-                Plugin.Log.Info($"Saving cached durations for {cachedAudioData.Count} songs.");
-                File.WriteAllText(cachedAudioDataPath, JsonConvert.SerializeObject(cachedAudioData));
+                await Task.Run(() => JsonFileHandler.WriteCompactWithoutDefault(cachedAudioData, cachedAudioDataPath));
             }
             catch (Exception ex)
             {

@@ -44,7 +44,7 @@ namespace SongCore
             }
             else
             {
-                Collections.LoadCustomLevelSongData();
+                _ = Collections.LoadCachedSongDataAsync();
             }
 
             Collections.RegisterCustomCharacteristic(BasicUI.MissingCharIcon!, "Missing Characteristic", "Missing Characteristic", "MissingCharacteristic", "MissingCharacteristic", false, false, 1000);

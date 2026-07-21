@@ -132,7 +132,7 @@ namespace SongCore
             }
         }
 
-        private void HandleSceneTransitionDidFinish(GameScenesManager.SceneTransitionType sceneTransitionType, ScenesTransitionSetupDataSO scenesTransitionSetupData, DiContainer container)
+        private async void HandleSceneTransitionDidFinish(GameScenesManager.SceneTransitionType sceneTransitionType, ScenesTransitionSetupDataSO scenesTransitionSetupData, DiContainer container)
         {
             _gameScenesManager.transitionDidFinishEvent -= HandleSceneTransitionDidFinish;
 
@@ -146,8 +146,7 @@ namespace SongCore
 
             if (Hashing.cachedSongHashData.Count == 0)
             {
-                Hashing.ReadCachedSongHashes();
-                Hashing.ReadCachedAudioData();
+                await Task.WhenAll(Hashing.LoadCachedSongHashesAsync(), Hashing.LoadCachedAudioDataAsync());
                 RefreshSongs();
             }
             else
@@ -720,10 +719,7 @@ namespace SongCore
                 _loadingTask = null;
                 await UnityMainThreadTaskScheduler.Factory.StartNew(() => SongsLoadedEvent?.Invoke(this, CustomLevels));
 
-                // Write our cached hash info and
-                Hashing.UpdateCachedHashesInternal(foundSongPaths.Keys);
-                Hashing.UpdateCachedAudioDataInternal(foundSongPaths.Keys);
-                await Collections.SaveCustomLevelSongDataAsync();
+                await Task.WhenAll(Hashing.SaveCachedSongHashesAsync(foundSongPaths.Keys), Hashing.SaveCachedAudioDataAsync(foundSongPaths.Keys), Collections.SaveCachedSongDataAsync());
             };
 
             try
@@ -760,7 +756,7 @@ namespace SongCore
         {
             DeletingSong?.Invoke();
             DeleteSingleSong(folderPath, deleteFolder);
-            Hashing.UpdateCachedHashes(new HashSet<string>((CustomLevels.Keys.Concat(CustomWIPLevels.Keys))));
+            AsyncHelper.RunSync(() => Hashing.SaveCachedSongHashesAsync(new HashSet<string>((CustomLevels.Keys.Concat(CustomWIPLevels.Keys)))));
             RefreshLevelPacks();
         }
 
@@ -777,7 +773,7 @@ namespace SongCore
                 await Task.Run(() => DeleteSingleSong(folderPath, deleteFolder));
             }
 
-            Hashing.UpdateCachedHashes(new HashSet<string>(CustomLevels.Keys.Concat(CustomWIPLevels.Keys)));
+            await Hashing.SaveCachedSongHashesAsync(new HashSet<string>(CustomLevels.Keys.Concat(CustomWIPLevels.Keys)));
             RefreshLevelPacks();
         }
 
