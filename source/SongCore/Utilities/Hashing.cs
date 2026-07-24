@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -170,16 +171,17 @@ namespace SongCore.Utilities
                 return songHash;
             }
 
-            var prependBytes = Encoding.UTF8.GetBytes(customLevelFolderInfo.levelInfoJsonString);
+            var infoPath = Path.Combine(customLevelFolderInfo.folderPath, CustomLevelPathHelper.kStandardLevelInfoFilename);
             var files = standardLevelInfoSaveData.difficultyBeatmapSets
                 .SelectMany(difficultyBeatmapSet => difficultyBeatmapSet.difficultyBeatmaps)
                 .Select(difficultyBeatmap => Path.Combine(customLevelFolderInfo.folderPath, difficultyBeatmap.beatmapFilename))
-                .Where(File.Exists);
+                .Where(File.Exists)
+                .Prepend(infoPath);
 
             try
             {
                 IOBlacklistHooks.AllowIO.Value = true;
-                var hash = CreateSha1FromFilesWithPrependBytes(prependBytes, files);
+                var hash = CreateSha1FromLevelFiles(files);
                 TryGetRelativePath(customLevelFolderInfo.folderPath, out var relativePath);
                 cachedSongHashData[relativePath] = new SongHashData(directoryHash, hash);
 
@@ -198,18 +200,18 @@ namespace SongCore.Utilities
                 return songHash;
             }
 
-            var prependBytes = Encoding.UTF8.GetBytes(customLevelFolderInfo.levelInfoJsonString);
+            var infoPath = Path.Combine(customLevelFolderInfo.folderPath, CustomLevelPathHelper.kStandardLevelInfoFilename);
             var audioDataPath = Path.Combine(customLevelFolderInfo.folderPath, beatmapLevelSaveData.audio.audioDataFilename);
             var files = beatmapLevelSaveData.difficultyBeatmaps.SelectMany(difficultyBeatmap => new[]
             {
                 Path.Combine(customLevelFolderInfo.folderPath, difficultyBeatmap.beatmapDataFilename),
                 Path.Combine(customLevelFolderInfo.folderPath, difficultyBeatmap.lightshowDataFilename)
-            }).Prepend(audioDataPath).Where(File.Exists);
+            }).Prepend(audioDataPath).Where(File.Exists).Prepend(infoPath);
 
             try
             {
                 IOBlacklistHooks.AllowIO.Value = true;
-                var hash = CreateSha1FromFilesWithPrependBytes(prependBytes, files);
+                var hash = CreateSha1FromLevelFiles(files);
                 TryGetRelativePath(customLevelFolderInfo.folderPath, out var relativePath);
                 cachedSongHashData[relativePath] = new SongHashData(directoryHash, hash);
 
@@ -275,42 +277,46 @@ namespace SongCore.Utilities
             return path.StartsWith(fromPath, StringComparison.Ordinal);
         }
 
-        // Black magic https://stackoverflow.com/questions/311165/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-and-vice-versa/14333437#14333437
-        private static string ByteToHexBitFiddle(byte[] bytes)
+        private static string ToHexString(byte[] bytes)
         {
-            var c = new char[bytes.Length * 2];
-            int b;
-            for (var i = 0; i < bytes.Length; i++)
+            return string.Create(bytes.Length * 2, bytes, (chars, state) =>
             {
-                b = bytes[i] >> 4;
-                c[i * 2] = (char) (55 + b + (((b - 10) >> 31) & -7));
-                b = bytes[i] & 0xF;
-                c[i * 2 + 1] = (char) (55 + b + (((b - 10) >> 31) & -7));
-            }
-            return new string(c);
+                for (var i = 0; i < state.Length; i++)
+                {
+                    // https://stackoverflow.com/questions/311165/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-and-vice-versa/14333437#14333437
+                    var b = state[i] >> 4;
+                    chars[i * 2] = (char)(b < 10 ? '0' + b : 'A' - 10 + b);
+                    b = state[i] & 0xF;
+                    chars[i * 2 + 1] = (char)(b < 10 ? '0' + b : 'A' - 10 + b);
+                }
+            });
         }
 
-
-        private static string CreateSha1FromFilesWithPrependBytes(byte[] prependBytes, IEnumerable<string> files)
+        private static string CreateSha1FromLevelFiles(IEnumerable<string> files)
         {
-            using var sha1 = SHA1.Create();
-            var buffer = new byte[8192];
+            using var incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA1);
 
-            sha1.TransformBlock(prependBytes, 0, prependBytes.Length, null, 0);
-
-            foreach (var file in files)
+            var buffer = ArrayPool<byte>.Shared.Rent(131072);
+            try
             {
-                using var fileStream = File.Open(file, FileMode.Open);
-                int bytesRead;
-                while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+                foreach (var file in files)
                 {
-                    sha1.TransformBlock(buffer, 0, bytesRead, null, 0);
+                    // Large reads go directly into our buffer, so the internal buffer size is irrelevant.
+                    using var fileStream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan);
+
+                    int bytesRead;
+                    while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        incrementalHash.AppendData(buffer, 0, bytesRead);
+                    }
                 }
             }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
 
-            sha1.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-
-            return ByteToHexBitFiddle(sha1.Hash);
+            return ToHexString(incrementalHash.GetHashAndReset());
         }
     }
 }
