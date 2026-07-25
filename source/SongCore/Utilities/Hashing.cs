@@ -178,9 +178,9 @@ namespace SongCore.Utilities
                 .Where(File.Exists)
                 .Prepend(infoPath);
 
+            IOBlacklistHook.AllowIO.Value = true;
             try
             {
-                IOBlacklistHooks.AllowIO.Value = true;
                 var hash = CreateSha1FromLevelFiles(files);
                 TryGetRelativePath(customLevelFolderInfo.folderPath, out var relativePath);
                 cachedSongHashData[relativePath] = new SongHashData(directoryHash, hash);
@@ -189,7 +189,7 @@ namespace SongCore.Utilities
             }
             finally
             {
-                IOBlacklistHooks.AllowIO.Value = false;
+                IOBlacklistHook.AllowIO.Value = false;
             }
         }
 
@@ -208,9 +208,9 @@ namespace SongCore.Utilities
                 Path.Combine(customLevelFolderInfo.folderPath, difficultyBeatmap.lightshowDataFilename)
             }).Prepend(audioDataPath).Where(File.Exists).Prepend(infoPath);
 
+            IOBlacklistHook.AllowIO.Value = true;
             try
             {
-                IOBlacklistHooks.AllowIO.Value = true;
                 var hash = CreateSha1FromLevelFiles(files);
                 TryGetRelativePath(customLevelFolderInfo.folderPath, out var relativePath);
                 cachedSongHashData[relativePath] = new SongHashData(directoryHash, hash);
@@ -219,7 +219,7 @@ namespace SongCore.Utilities
             }
             finally
             {
-                IOBlacklistHooks.AllowIO.Value = false;
+                IOBlacklistHook.AllowIO.Value = false;
             }
         }
 

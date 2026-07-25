@@ -29,7 +29,7 @@ namespace SongCore.Installers
             Container.BindInterfacesTo<LevelListTableCellDataHook>().AsSingle();
             Container.BindInterfacesTo<EscapeURLHook>().AsSingle();
             Container.BindInterfacesTo<ComputeMaxMultipliedScoreSafelyHook>().AsSingle();
-            Container.BindInterfacesTo<IOBlacklistHooks>().AsSingle();
+            Container.BindInterfacesTo<IOBlacklistHook>().AsSingle();
         }
     }
 }

@@ -88,9 +88,9 @@ namespace SongCore.Hooks.BeatmapLevelCache
                 return data;
             }
 
+            IOBlacklistHook.AllowIO.Value = true;
             try
             {
-                IOBlacklistHooks.AllowIO.Value = true;
                 data = original();
                 CacheJsonData(beatmapDataType, data);
 
@@ -98,7 +98,7 @@ namespace SongCore.Hooks.BeatmapLevelCache
             }
             finally
             {
-                IOBlacklistHooks.AllowIO.Value = false;
+                IOBlacklistHook.AllowIO.Value = false;
             }
         }
 
@@ -120,9 +120,9 @@ namespace SongCore.Hooks.BeatmapLevelCache
 
             Task<string?>? originalTask = null;
 
+            IOBlacklistHook.AllowIO.Value = true;
             try
             {
-                IOBlacklistHooks.AllowIO.Value = true;
                 originalTask = original();
                 _jsonTasks[idx] = originalTask;
                 data = await originalTask;
@@ -136,7 +136,7 @@ namespace SongCore.Hooks.BeatmapLevelCache
             }
             finally
             {
-                IOBlacklistHooks.AllowIO.Value = false;
+                IOBlacklistHook.AllowIO.Value = false;
 
                 if (originalTask != null && originalTask == _jsonTasks[idx])
                 {
