@@ -206,9 +206,9 @@ namespace SongCore
         /// </summary>
         public async void RefreshLevelPacks()
         {
-            CustomLevelsPack?.UpdateBeatmapLevels(CustomLevels.Values.OrderBy(l => l.songName).ToArray());
-            WIPLevelsPack?.UpdateBeatmapLevels(CustomWIPLevels.Values.OrderBy(l => l.songName).ToArray());
-            CachedWIPLevelsPack?.UpdateBeatmapLevels(CachedWIPLevels.Values.OrderBy(l => l.songName).ToArray());
+            CustomLevelsPack?.UpdateBeatmapLevels([.. CustomLevels.Values]);
+            WIPLevelsPack?.UpdateBeatmapLevels([.. CustomWIPLevels.Values]);
+            CachedWIPLevelsPack?.UpdateBeatmapLevels([.. CachedWIPLevels.Values]);
 
             if (CachedWIPLevelsPack != null && CustomLevelsRepository != null)
             {
@@ -226,7 +226,7 @@ namespace SongCore
             {
                 if (folderEntry.SongFolderEntry.Pack == FolderLevelPack.NewPack)
                 {
-                    folderEntry.LevelPack.UpdateBeatmapLevels(folderEntry.Levels.Values.OrderBy(l => l.songName).ToArray());
+                    folderEntry.LevelPack.UpdateBeatmapLevels([.. folderEntry.Levels.Values]);
                     if (CustomLevelsRepository != null && (!folderEntry.Levels.IsEmpty || folderEntry is ModSeparateSongFolder { AlwaysShow: true }))
                     {
                         CustomLevelsRepository.AddLevelPack(folderEntry.LevelPack);
