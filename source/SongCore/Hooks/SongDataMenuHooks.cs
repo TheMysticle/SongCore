@@ -116,6 +116,11 @@ namespace SongCore.Hooks
             {
                 var cell = (TextSegmentedControlCell)instance._difficultySegmentedControl.cells[i];
 
+                if (cell._text.alignment == TextAlignmentOptions.Midline)
+                {
+                    continue;
+                }
+
                 cell._text.enableAutoSizing = true;
                 cell._text.fontSizeMin = 2.125f;
                 cell._text.fontSizeMax = 3f;
