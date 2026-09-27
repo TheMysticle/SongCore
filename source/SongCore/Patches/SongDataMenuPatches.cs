@@ -83,7 +83,7 @@ namespace SongCore.Patches
                 return;
             }
 
-            if (_characteristicDifficultyLabels.TryGetValue(_beatmapCharacteristicSegmentedControlController.selectedBeatmapCharacteristic.serializedName, out var difficultyLabels)
+            if (_characteristicDifficultyLabels.TryGetValue(_beatmapCharacteristicSegmentedControlController.selectedBeatmapCharacteristic.SerializedName(), out var difficultyLabels)
                 && difficultyLabels.TryGetValue(difficulty, out var difficultyLabel))
             {
                 __result = difficultyLabel.Replace("<", "<\u200B").Replace(">", ">\u200B");
@@ -99,12 +99,12 @@ namespace SongCore.Patches
         [AffinityPatch(typeof(BeatmapCharacteristicSegmentedControlController), nameof(BeatmapCharacteristicSegmentedControlController.SetData))]
         private void SelectDefaultCharacteristic()
         {
-            if (_beatmapLevel!.hasPrecalculatedData || _songData!._defaultCharacteristic == null || _beatmapCharacteristicSegmentedControlController.selectedBeatmapCharacteristic.serializedName == _songData._defaultCharacteristic)
+            if (_beatmapLevel!.hasPrecalculatedData || _songData!._defaultCharacteristic == null || _beatmapCharacteristicSegmentedControlController.selectedBeatmapCharacteristic.SerializedName() == _songData._defaultCharacteristic)
             {
                 return;
             }
 
-            var index = _beatmapCharacteristicSegmentedControlController._currentlyAvailableBeatmapCharacteristics.FindIndex(c => c.serializedName == _songData._defaultCharacteristic);
+            var index = _beatmapCharacteristicSegmentedControlController._currentlyAvailableBeatmapCharacteristics.FindIndex(c => c.SerializedName() == _songData._defaultCharacteristic);
             if (index != -1)
             {
                 _beatmapCharacteristicSegmentedControlController._segmentedControl.SelectCellWithNumber(index);
@@ -112,8 +112,13 @@ namespace SongCore.Patches
             }
         }
 
+        // The parameter below is unused but must exist with the correct type for Harmony to
+        // bind this patch to SetData's real "selectedBeatmapCharacteristic" parameter, which
+        // is now BeatmapCharacteristic (an enum) rather than BeatmapCharacteristicSO as of
+        // 1.45.1 -- leaving the old type here would compile fine (it's never used) but fail
+        // at Harmony patch-apply time since the declared type wouldn't match by name.
         [AffinityPatch(typeof(BeatmapCharacteristicSegmentedControlController), nameof(BeatmapCharacteristicSegmentedControlController.SetData))]
-        private void SetCosmeticCharacteristic(BeatmapCharacteristicSO selectedBeatmapCharacteristic)
+        private void SetCosmeticCharacteristic(BeatmapCharacteristic selectedBeatmapCharacteristic)
         {
             if (_beatmapLevel!.hasPrecalculatedData || !_config.DisplayCustomCharacteristics || _songData!._characteristicDetails == null)
             {
@@ -124,7 +129,7 @@ namespace SongCore.Patches
 
             foreach (var characteristicDetails in _songData._characteristicDetails)
             {
-                var index = _beatmapCharacteristicSegmentedControlController._currentlyAvailableBeatmapCharacteristics.FindIndex(c => c.serializedName == characteristicDetails._beatmapCharacteristicName);
+                var index = _beatmapCharacteristicSegmentedControlController._currentlyAvailableBeatmapCharacteristics.FindIndex(c => c.SerializedName() == characteristicDetails._beatmapCharacteristicName);
 
                 if (index == -1)
                 {
@@ -249,7 +254,7 @@ namespace SongCore.Patches
                 }
             }
 
-            if (beatmapKey.beatmapCharacteristic.serializedName == "MissingCharacteristic")
+            if (beatmapKey.characteristic.SerializedName() == "MissingCharacteristic")
             {
                 actionButton.interactable = false;
                 practiceButton.interactable = false;
@@ -279,8 +284,11 @@ namespace SongCore.Patches
             __instance.practiceButton.interactable = _practiceButtonInteractable;
         }
 
-        [AffinityPatch(typeof(StandardLevelScenesTransitionSetupDataSO), nameof(StandardLevelScenesTransitionSetupDataSO.InitColorInfo))]
-        private void SetSoloOverrideColorScheme(StandardLevelScenesTransitionSetupDataSO __instance)
+        // InitColorInfo no longer exists as of 1.45.1 -- its color-scheme setup was folded
+        // into the main Init method. This is still a postfix, so beatmapKey/colorScheme are
+        // already populated by the time it runs, same as before.
+        [AffinityPatch(typeof(StandardLevelScenesTransitionSetupData), nameof(StandardLevelScenesTransitionSetupData.Init))]
+        private void SetSoloOverrideColorScheme(StandardLevelScenesTransitionSetupData __instance)
         {
             if (_config is { CustomSongNoteColors: false, CustomSongEnvironmentColors: false, CustomSongObstacleColors: false })
             {
@@ -298,8 +306,10 @@ namespace SongCore.Patches
             __instance.colorScheme = overrideColorScheme;
         }
 
-        [AffinityPatch(typeof(MultiplayerLevelScenesTransitionSetupDataSO), nameof(MultiplayerLevelScenesTransitionSetupDataSO.InitColorInfo))]
-        private void SetMultiplayerOverrideColorScheme(MultiplayerLevelScenesTransitionSetupDataSO __instance)
+        // See the comment on SetSoloOverrideColorScheme above: InitColorInfo was folded into
+        // Init as of 1.45.1.
+        [AffinityPatch(typeof(MultiplayerLevelScenesTransitionSetupData), nameof(MultiplayerLevelScenesTransitionSetupData.Init))]
+        private void SetMultiplayerOverrideColorScheme(MultiplayerLevelScenesTransitionSetupData __instance)
         {
             if (_config is { CustomSongNoteColors: false, CustomSongEnvironmentColors: false, CustomSongObstacleColors: false })
             {
