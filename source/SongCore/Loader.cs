@@ -134,7 +134,7 @@ namespace SongCore
             }
         }
 
-        private void HandleSceneTransitionDidFinish(SceneTransitionType sceneTransitionType, ScenesTransitionSetupDataSO scenesTransitionSetupData, DiContainer container)
+        private void HandleSceneTransitionDidFinish(SceneTransitionType sceneTransitionType, ScenesTransitionSetupData scenesTransitionSetupData, DiContainer container)
         {
             _gameScenesManager.transitionDidFinishEvent -= HandleSceneTransitionDidFinish;
 
