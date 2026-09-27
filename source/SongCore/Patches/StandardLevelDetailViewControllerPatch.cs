@@ -67,7 +67,12 @@ namespace SongCore.Patches
 
                         if (!handled)
                         {
-                            standardLevelDetailViewController.ShowContent(StandardLevelDetailViewController.ContentType.Error, Localization.Get(StandardLevelDetailViewController.kLoadingDataErrorLocalizationKey));
+                            // kLoadingDataErrorLocalizationKey (a generic "failed to load" key) no
+                            // longer exists as of 1.45.1 -- the game replaced it with more specific
+                            // keys (e.g. no-internet) that don't fit this catch-all case, so we fall
+                            // back to a plain string here, matching the other cases in this switch.
+                            const string errorText = "Error loading beatmap data.";
+                            standardLevelDetailViewController.ShowContent(StandardLevelDetailViewController.ContentType.Error, errorText);
                         }
 
                         Plugin.Log.Error(ex);
