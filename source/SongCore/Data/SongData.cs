@@ -17,13 +17,13 @@ namespace SongCore.Data
         public string _customEnvironmentName;
         public string _customEnvironmentHash;
         public DifficultyData[] _difficulties;
-        public string _defaultCharacteristic = null;
+        public string? _defaultCharacteristic;
 
         public ColorScheme[] _colorSchemes; //beatmap 2.1.0, community decided to song-core ify colour stuff
         public string[] _environmentNames; //these have underscores but the actual format doesnt, I genuinely dont know what to go by so I went consistent with songcore
 
         //PinkCore Port
-        public CharacteristicDetails[] _characteristicDetails;
+        public CharacteristicDetails[]? _characteristicDetails;
 
         [Serializable]
         public class CharacteristicDetails
@@ -239,7 +239,7 @@ namespace SongCore.Data
                             var difficulty = Utils.ToEnum((string)difficultyBeatmap["_difficulty"], BeatmapDifficulty.Normal);
                             var beatmapColorSchemeIdx = difficultyBeatmap.Value<int?>("_beatmapColorSchemeIdx");
                             var environmentNameIdx = difficultyBeatmap.Value<int?>("_environmentNameIdx");
-                            bool useSongCoreColors = true;
+                            var useSongCoreColors = true;
 
                             if (beatmapColorSchemeIdx != null)
                             {
@@ -438,7 +438,7 @@ namespace SongCore.Data
                         var difficulty = Utils.ToEnum((string)difficultyBeatmap["difficulty"], BeatmapDifficulty.Normal);
                         var beatmapColorSchemeIdx = difficultyBeatmap.Value<int?>("beatmapColorSchemeIdx");
                         var environmentNameIdx = difficultyBeatmap.Value<int?>("environmentNameIdx");
-                        bool useSongCoreColors = true;
+                        var useSongCoreColors = true;
 
                         if (beatmapColorSchemeIdx != null)
                         {

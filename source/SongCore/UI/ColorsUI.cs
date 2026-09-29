@@ -77,7 +77,7 @@ namespace SongCore.UI
         [UIAction("#post-parse")]
         private void PostParse()
         {
-            ColorSchemeView colorSchemeViewPrefab = Object.Instantiate(_gameplaySetupViewController._colorsOverrideSettingsPanelController._colorSchemeDropDown._cellPrefab._colorSchemeView, selectedColorTransform);
+            var colorSchemeViewPrefab = Object.Instantiate(_gameplaySetupViewController._colorsOverrideSettingsPanelController._colorSchemeDropDown._cellPrefab._colorSchemeView, selectedColorTransform);
             colorSchemeView = IPA.Utilities.ReflectionUtil.CopyComponent<ColorSchemeView>(colorSchemeViewPrefab, colorSchemeViewPrefab.gameObject);
             Object.DestroyImmediate(colorSchemeViewPrefab);
             modalPosition = modal.transform.localPosition;
@@ -91,13 +91,13 @@ namespace SongCore.UI
 
         private void SetColors(SongData.DifficultyData songData)
         {
-            Color saberLeft = songData._colorLeft == null ? voidColor : Utils.ColorFromMapColor(songData._colorLeft);
-            Color saberRight = songData._colorRight == null ? voidColor : Utils.ColorFromMapColor(songData._colorRight);
-            Color envLeft = songData._envColorLeft == null ? voidColor : Utils.ColorFromMapColor(songData._envColorLeft);
-            Color envRight = songData._envColorRight == null ? voidColor : Utils.ColorFromMapColor(songData._envColorRight);
-            Color envLeftBoost = songData._envColorLeftBoost == null ? voidColor : Utils.ColorFromMapColor(songData._envColorLeftBoost);
-            Color envRightBoost = songData._envColorRightBoost == null ? voidColor : Utils.ColorFromMapColor(songData._envColorRightBoost);
-            Color obstacle = songData._obstacleColor == null ? voidColor : Utils.ColorFromMapColor(songData._obstacleColor);
+            var saberLeft = songData._colorLeft == null ? voidColor : Utils.ColorFromMapColor(songData._colorLeft);
+            var saberRight = songData._colorRight == null ? voidColor : Utils.ColorFromMapColor(songData._colorRight);
+            var envLeft = songData._envColorLeft == null ? voidColor : Utils.ColorFromMapColor(songData._envColorLeft);
+            var envRight = songData._envColorRight == null ? voidColor : Utils.ColorFromMapColor(songData._envColorRight);
+            var envLeftBoost = songData._envColorLeftBoost == null ? voidColor : Utils.ColorFromMapColor(songData._envColorLeftBoost);
+            var envRightBoost = songData._envColorRightBoost == null ? voidColor : Utils.ColorFromMapColor(songData._envColorRightBoost);
+            var obstacle = songData._obstacleColor == null ? voidColor : Utils.ColorFromMapColor(songData._obstacleColor);
 
             colorSchemeView.SetColors(saberLeft, saberRight, envLeft, envRight, envLeftBoost, envRightBoost, obstacle);
         }

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Concurrent;
+using SongCore.Hooks;
+using SongCore.Hooks.BeatmapLevelCache;
 using Zenject;
 
 namespace SongCore.Installers
@@ -19,6 +21,9 @@ namespace SongCore.Installers
         public override void InstallBindings()
         {
             Container.BindInstance(_config).AsSingle();
+            Container.BindInterfacesTo<AllowNegativeNoteJumpSpeedHook>().AsSingle();
+            Container.BindInterfacesTo<CustomCharacteristicsHook>().AsSingle();
+            Container.BindInterfacesAndSelfTo<EventProxyHooks>().AsSingle();
             Container.Bind<IRefreshable>().WithId(refreshableID).To<SongCoreRefreshable>().AsSingle();
             Container.Bind(typeof(IInitializable), typeof(IDisposable), typeof(SongCoreLoaderDidLoad)).To<SongCoreLoaderDidLoad>().AsSingle();
             Container.Bind<IObservableChange>().WithId(didLoadEventID).FromMethod(ctx => ctx.Container.Resolve<SongCoreLoaderDidLoad>()).AsSingle();

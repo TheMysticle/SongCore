@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
+using BeatSaber.Destinations;
 using BeatSaberMarkupLanguage;
 using SongCore.Utilities;
 using TMPro;
@@ -24,8 +25,6 @@ namespace SongCore.UI
 
         private Canvas? _canvas;
         private CanvasGroup? _canvasGroup;
-        // Fully qualified because Unity's bundled TextMeshPro as of 1.45.1 now also defines
-        // a TMPro.FloatTween, which is ambiguous with Tweening.FloatTween (the one we want).
         private Tweening.FloatTween? _floatTween;
         private TMP_Text? _pluginNameText;
         private TMP_Text? _headerText;
@@ -124,7 +123,7 @@ namespace SongCore.UI
 
         private void SceneManagerOnActiveSceneChanged(Scene oldScene, Scene newScene)
         {
-            if (newScene.name == "MainMenu")
+            if (newScene.name == SceneNames.kMainMenuSceneName)
             {
                 if (_showingMessage)
                 {
@@ -151,7 +150,7 @@ namespace SongCore.UI
         private void SongLoaderOnSongsLoadedEvent(Loader loader, ConcurrentDictionary<string, BeatmapLevel> customLevels)
         {
             _showingMessage = false;
-            string songOrSongs = customLevels.Count == 1 ? "song" : "songs";
+            var songOrSongs = customLevels.Count == 1 ? "song" : "songs";
             _headerText.text = $"{customLevels.Count} {(_jokeTime ? $"{songOrSongs} deleted" : $"{songOrSongs} loaded")}";
             _loadingBar.enabled = false;
             _loadingBackg.enabled = false;
@@ -177,6 +176,16 @@ namespace SongCore.UI
 
             _canvas = gameObject.AddComponent<Canvas>();
             _canvas.renderMode = RenderMode.WorldSpace;
+            // The game's own curved-UI shaders (used by HMUI.CurvedTextMeshPro and its curved
+            // Image/Graphic shaders) unconditionally read the TexCoord1/TexCoord2 vertex
+            // channels. Unity only allocates those channels on a canvas's generated meshes when
+            // explicitly requested; without both channels AND a CurvedCanvasSettings component
+            // to supply the curvature radius, those shaders sample garbage vertex data instead
+            // of well-defined zeros, rendering as a garbled/smudged mesh. BSML's own
+            // FloatingScreen.CreateFloatingScreen always sets this up the same way, even for
+            // flat/uncurved screens (radius 0 is a normal, working case).
+            gameObject.AddComponent<HMUI.CurvedCanvasSettings>().SetRadius(0f);
+            _canvas.additionalShaderChannels |= AdditionalCanvasShaderChannels.TexCoord1 | AdditionalCanvasShaderChannels.TexCoord2;
             _canvas.enabled = false;
             // As of 1.45.1, the game's own curved-UI shaders (used by both HMUI.CurvedTextMeshPro
             // and, it seems, its curved Image/Graphic shaders) unconditionally read the
