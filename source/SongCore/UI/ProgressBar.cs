@@ -176,7 +176,16 @@ namespace SongCore.UI
 
             _canvas = gameObject.AddComponent<Canvas>();
             _canvas.renderMode = RenderMode.WorldSpace;
-            _canvas.additionalShaderChannels |= AdditionalCanvasShaderChannels.TexCoord2;
+            // The game's own curved-UI shaders (used by HMUI.CurvedTextMeshPro and its curved
+            // Image/Graphic shaders) unconditionally read the TexCoord1/TexCoord2 vertex
+            // channels. Unity only allocates those channels on a canvas's generated meshes when
+            // explicitly requested; without both channels AND a CurvedCanvasSettings component
+            // to supply the curvature radius, those shaders sample garbage vertex data instead
+            // of well-defined zeros, rendering as a garbled/smudged mesh. BSML's own
+            // FloatingScreen.CreateFloatingScreen always sets this up the same way, even for
+            // flat/uncurved screens (radius 0 is a normal, working case).
+            gameObject.AddComponent<HMUI.CurvedCanvasSettings>().SetRadius(0f);
+            _canvas.additionalShaderChannels |= AdditionalCanvasShaderChannels.TexCoord1 | AdditionalCanvasShaderChannels.TexCoord2;
             _canvas.enabled = false;
             _canvasGroup = gameObject.AddComponent<CanvasGroup>();
             _canvasGroup.alpha = 0f;
